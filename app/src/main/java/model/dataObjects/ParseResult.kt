@@ -6,6 +6,7 @@ data class ParseResult (
     val result: Any? = null,
     val resultType: LiteralType = LiteralType.NONE,
     val isStatic: Boolean = true,
-    val directDependencies: List<Long> = emptyList(),
+    val globalDependencyIds: List<Long> = emptyList(),
+    val localDependencyIds: List<Long> = emptyList(),
     val errorText: String = "",
 )

@@ -293,10 +293,11 @@ private fun GroupScreenView_Preview() {
                     text = "@(asdn)",
                     parseResult = ShuntingYardParser.evaluate(
                         id = 2,
+                        getGroupPath = { "" },
                         rawText = "@(asdn)",
-                        getExpressionId = { null },
+                        getExpressionId = { _ -> null },
                         getExpression = { null },
-                        isDependentOn = { _, _ -> false }
+                        getOverlappingDependencies = { _, _ -> emptyList() }
                     )
                 ),
             )

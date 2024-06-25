@@ -28,7 +28,6 @@ data class GroupEntity (
         id = id,
         parentId = parentId,
         name = name,
-        //path = path,
         templateName = templateName
     )
 

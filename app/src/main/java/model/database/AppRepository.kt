@@ -1,6 +1,7 @@
 package model.database
 
 import androidx.annotation.WorkerThread
+import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -24,8 +25,6 @@ class AppRepository(
     /*
     For populating Expression references in tokens
      */
-
-
     val groupIdToFullPathMap: StateFlow<Map<Long,String>> = database.groupDao().getFullPathMap().stateIn(
         scope = scope,
         started = SharingStarted.Eagerly,
@@ -75,19 +74,25 @@ class AppRepository(
 
 
     /*
-    For ensuring that there are no Cyclic dependencies
+    For creating copies and templates of Expressions
      */
-    val expressionDirectDependentsMap: StateFlow<Map<Long, List<Long>>> = database.expressionDependencyDao().getExpressionDirectDependentMap().map { directDependencyMap ->
-        directDependencyMap.mapValues { entry -> entry.value.map { directDependencyEntity -> directDependencyEntity.id } }
-    }.stateIn(
+
+    val expressionLocalDirectDependencies: StateFlow<Map<Long, List<Long>>> = database.expressionDependencyDao().getExpressionDirectDependenciesMap(isLocal = true).stateIn(
         scope = scope,
         started = SharingStarted.Eagerly,
         initialValue = emptyMap()
     )
 
-    val expressionDeepDependentsMap: StateFlow<Map<Long, List<Long>>> = database.expressionDependencyDao().getExpressionDeepDependencyList().map { deepDependencyList ->
-        deepDependencyList.groupBy{ dependency -> dependency.dependencyId }.mapValues { entry -> entry.value.map { dependency -> dependency.id } }
-    }.stateIn(
+    /*
+    For ensuring that there are no Cyclic dependencies
+     */
+    val expressionAllDirectDependentsMap: StateFlow<Map<Long, List<Long>>> = database.expressionDependencyDao().getExpressionAllDirectDependentsMap().stateIn(
+        scope = scope,
+        started = SharingStarted.Eagerly,
+        initialValue = emptyMap()
+    )
+
+    val expressionDeepDependentsMap: StateFlow<Map<Long, List<Long>>> = database.expressionDependencyDao().getExpressionDeepDependencyList().stateIn(
         scope = scope,
         started = SharingStarted.Eagerly,
         initialValue = emptyMap()
@@ -97,7 +102,8 @@ class AppRepository(
     Checking if there are possible Cyclic Dependencies
      */
     @WorkerThread
-    fun isExpressionDependentOn(dependentId: Long, dependencyId: Long): Boolean? = expressionDeepDependentsMap.value[dependencyId]?.contains(dependentId)//expressionDeepDependencyMap.value[dependent]?.contains(dependency)
+    fun getOverlappingDependencies(id: Long, otherIds: List<Long>): List<Long> = expressionDeepDependentsMap.value[id]?.fastFilter { dependentId -> otherIds.contains(dependentId) } ?: emptyList()
+
 
     @WorkerThread
     suspend fun upsertExpression(expression: Expression, updateDependents: Boolean = true): Long {
@@ -110,6 +116,12 @@ class AppRepository(
     }
 
     @WorkerThread
+    fun getExpressionGroupPath(expressionId: Long): String {
+        val groupId = expressionMap.value[expressionId]?.parentId ?: return ""
+        return groupIdToFullPathMap.value[groupId] ?: ""
+    }
+
+    @WorkerThread
     suspend fun upsertExpressions(expressions: List<Expression>): List<Long> = database.expressionDao().upsertExpressions(expressions.fastMap { expression -> ExpressionEntity.fromExpression(expression) })
 
     @WorkerThread
@@ -117,8 +129,6 @@ class AppRepository(
 
     @WorkerThread
     fun deleteExpressionDependency(id: Long) = database.expressionDependencyDao().deleteDependencies(id)
-
-
 
     @WorkerThread
     fun getGroupWithChildren(id: Long): Flow<GroupWithChildren> = database.groupWithChildrenDao().getExpressionGroupWithChildren(id).map{ expressionGroupWithChildrenEntity -> expressionGroupWithChildrenEntity.toExpressionGroupWithChildren()}

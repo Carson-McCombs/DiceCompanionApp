@@ -52,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import model.RegexPatterns
 import model.dataObjects.Expression
 import model.dataObjects.ParseResult
 import model.parser.token.LiteralType
@@ -162,6 +163,7 @@ private fun ChildExpressionView_TitleBar(expression: Expression, nameTextFieldSt
     val focusManager = LocalFocusManager.current
     val interactionSource = remember(expression.id, "expressionNameInteractionSource") { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
+    val nameFilterInputTransformation = remember("nameRegex"){ RegexInputTransformationFilter(RegexPatterns.nameRegex) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -181,6 +183,7 @@ private fun ChildExpressionView_TitleBar(expression: Expression, nameTextFieldSt
                 textAlign = TextAlign.Center,
                 textDecoration = TextDecoration.None
             ),
+            inputTransformation =  nameFilterInputTransformation,
             cursorBrush = SolidColor(MaterialTheme.colorScheme.onPrimaryContainer),
             interactionSource = interactionSource,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),

@@ -22,11 +22,13 @@ interface ExpressionDependencyDao {
             "ON recursion.id = relationship.dependencyId " +
             ") " +
             "SELECT id, dependencyId FROM recursive_table")
-    fun getExpressionDeepDependencyList(): Flow<List<ExpressionDirectDependenciesEntity>>
-
+    fun getExpressionDeepDependencyList(): Flow<Map<@MapColumn(columnName = "dependencyId") Long, List<@MapColumn(columnName = "id") Long>>>
 
     @Query("SELECT * FROM expressionDirectDependenciesEntity")
-    fun getExpressionDirectDependentMap(): Flow<Map<@MapColumn(columnName = "dependencyId") Long, List<ExpressionDirectDependenciesEntity>>>
+    fun getExpressionAllDirectDependentsMap(): Flow<Map<@MapColumn(columnName = "dependencyId") Long, List<@MapColumn(columnName = "id") Long>>>
+
+    @Query("SELECT * FROM expressionDirectDependenciesEntity WHERE isLocal = (:isLocal)")
+    fun getExpressionDirectDependenciesMap(isLocal: Boolean): Flow<Map<@MapColumn(columnName = "id") Long, List<@MapColumn(columnName = "dependencyId") Long>>>
 
     @Insert
     fun insertDependencies(expressionDirectDependenciesEntity: List<ExpressionDirectDependenciesEntity>)

@@ -92,6 +92,23 @@ fun HelpScreenView(navigateUp: () -> Unit, navigateToGitHub: () -> Unit){
                 style = MaterialTheme.typography.bodyLarge
             )
             Text(
+                text = "\"@(../Expression_Name)\": ",
+                textAlign = TextAlign.Start,
+                style = boldBodyLarge
+            )
+            Text(
+                text =  "This is the syntax for a Local or Relative Expression Reference. " +
+                        "Where the path of the Group containing the Expression replaces " +
+                        "the \"..\". For example, if I have a group named \"GroupA\" which " +
+                        "contains two Expressions: \"ExpressionA\" and \"ExpressionB\", " +
+                        "ExpressionB can use \"@(../ExpressionA)\", which is the same as " +
+                        "saying \"@(GroupA/ExpressionA), to reference ExpressionA. This is " +
+                        "mainly useful simplifying references and for " +
+                        "Copying / Pasting / Templating Expressions and Groups.",
+                textAlign = TextAlign.Start,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
                 text = "\"floor( x )\": ",
                 textAlign = TextAlign.Start,
                 style = boldBodyLarge
@@ -182,9 +199,7 @@ fun HelpScreenView(navigateUp: () -> Unit, navigateToGitHub: () -> Unit){
                 style = MaterialTheme.typography.titleLarge
             )
             Text(
-                text =  "-Referencing Local Expressions: Inclusion of ~Tilda in paths, such as  \"@(~/Other_Expression)\" where Other_Expression is " +
-                        "an Expression in the same group as the Expression referencing it.\n" +
-                        "-Copy & Paste Expressions / Groups\n" +
+                text =  "-Copy & Paste Expressions / Groups\n" +
                         "-Expression and Group Templates: Save a copy of an Expression or Group. If it is an Expression, " +
                         "then lock its text. If it is a Group, lock all of the Expressions and Groups that it contains, but allow " +
                         "the addition of new Expressions and Groups.\n" +

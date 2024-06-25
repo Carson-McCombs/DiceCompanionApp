@@ -12,7 +12,7 @@ import model.database.entity.ExpressionDirectDependenciesEntity
 import model.database.entity.ExpressionEntity
 import model.database.entity.GroupEntity
 
-@Database(entities = [GroupEntity::class, ExpressionEntity::class, ExpressionDirectDependenciesEntity::class], version = 27, exportSchema = false)
+@Database(entities = [GroupEntity::class, ExpressionEntity::class, ExpressionDirectDependenciesEntity::class], version = 28, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun expressionDao(): ExpressionDao
     abstract fun groupDao(): GroupDao

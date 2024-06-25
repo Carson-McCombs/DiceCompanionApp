@@ -15,7 +15,7 @@ class Tokenizer {
             return RegexPatterns.moreThanOneSpaces.replace(spacedText, " ")
         }
 
-        fun tokenize(rawText: String, getExpressionId: (String) -> Long?, getExpression: (Long) -> Expression?, reevaluateExpression: (Long, String) -> ParseResult?): Pair<List<Token>?,Error?> {
+        fun tokenize(rawText: String, groupPath: String, getExpressionId: (String) -> Long?, getExpression: (Long) -> Expression?, reevaluateExpression: (Long, String) -> ParseResult?): Pair<List<Token>?,Error?> {
             //val transformedInputText = unaryOperatorRegex.replace(text, "u")
             //println("Original Text:    $text")
             //println("Transformed Text: $transformedInputText")
@@ -31,6 +31,7 @@ class Tokenizer {
             val tokens = tokenStrings.fastMap { string ->
                 Token(
                     text = string,
+                    groupPath = groupPath,
                     getExpressionId = getExpressionId,
                     getExpression = getExpression,
                     reevaluateExpression = reevaluateExpression,

@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import model.RegexPatterns
 import model.dataObjects.Group
 import view.resuseable.DismissibleCard
 import view.ui.theme.DiceCompanionTheme
@@ -50,6 +51,8 @@ fun ChildExpressionGroupView(
     val interactionSource =
         remember(group.id, "expressionGroupInteractionSource") { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
+    val nameFilterInputTransformation = remember("nameRegex"){ RegexInputTransformationFilter(
+        RegexPatterns.nameRegex) }
     DismissibleCard(
         modifier = modifier
             .wrapContentHeight()
@@ -81,6 +84,7 @@ fun ChildExpressionGroupView(
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     textAlign = TextAlign.Center
                 ),
+                inputTransformation = nameFilterInputTransformation,
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.onPrimaryContainer),
                 interactionSource = interactionSource,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),

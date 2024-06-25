@@ -17,7 +17,8 @@ import model.parser.tokenizer.Tokenizer
 private data class ParserSnapshot(
     val tokens: List<Token>,
     val isStatic: Boolean,
-    val dependencies: List<Long>
+    val globalDependencyIds: List<Long>,
+    val localDependencyIds: List<Long>,
 )
 
 
@@ -28,20 +29,22 @@ class ShuntingYardParser {
         /*
         Checks for a cached tokens to reuse ( exists if the expression has been parsed at least once since the app has began running, even if not directly
         */
-        fun reevaluate(id: Long, rawText: String, getExpressionId: (String) -> Long?, getExpression: (Long) -> Expression?, isDependentOn: (Long, Long) -> Boolean): ParseResult {
+        fun reevaluate(id: Long,  getGroupPath: (Long) -> String, rawText: String, getExpressionId: (String) -> Long?, getExpression: (Long) -> Expression?, getOverlappingDependencies: (Long, List<Long>) -> List<Long>): ParseResult {
             if (!cachedExpressionTokens.containsKey(id)) return evaluate(
                 id = id,
                 rawText = rawText,
+                getGroupPath = getGroupPath,
                 getExpressionId = getExpressionId,
                 getExpression = getExpression,
-                isDependentOn = isDependentOn
+                getOverlappingDependencies = getOverlappingDependencies
             )
-            val (tokens, isStatic, dependencies) = cachedExpressionTokens[id]!!
-            tokens.fastFilter {token -> token.tokenType == TokenType.REFERENCE }.fastForEach { token -> token.updateReference() }
+            val parserSnapShot = cachedExpressionTokens[id]!!
+            parserSnapShot.tokens.fastFilter {token -> token.tokenType == TokenType.REFERENCE }.fastForEach { token -> token.updateReference() }
             return evaluate(
-                tokens = tokens,
-                isStatic = isStatic,
-                dependencies = dependencies
+                tokens = parserSnapShot.tokens,
+                isStatic = parserSnapShot.isStatic,
+                globalDependencyIds = parserSnapShot.globalDependencyIds,
+                localDependencyIds = parserSnapShot.localDependencyIds
             )
         }
 
@@ -49,19 +52,21 @@ class ShuntingYardParser {
         -Transforms raw text into tokens
         -Checks for errors such as Cyclic dependencies, self references, etc.
          */
-        fun evaluate(id: Long, rawText: String, getExpressionId: (String) -> (Long?), getExpression: (Long) -> Expression?, isDependentOn: (Long, Long) -> Boolean): ParseResult {
+        fun evaluate(id: Long, rawText: String, getGroupPath: (Long) -> String, getExpressionId: (String) -> (Long?), getExpression: (Long) -> Expression?, getOverlappingDependencies: (Long, List<Long>) -> List<Long>): ParseResult {
             if (rawText.isBlank()) return ParseResult()
             val (tokens, parseTokensErr) = Tokenizer.tokenize(
                 rawText = rawText,
+                groupPath = getGroupPath(id),
                 getExpression = getExpression,
                 getExpressionId = getExpressionId,
                 reevaluateExpression = { expressionId, expressionRawText ->
                     reevaluate(
                         id = expressionId,
                         rawText = expressionRawText,
+                        getGroupPath = getGroupPath,
                         getExpressionId = getExpressionId,
                         getExpression = getExpression,
-                        isDependentOn = isDependentOn,
+                        getOverlappingDependencies = getOverlappingDependencies,
 
                     )
                 },
@@ -69,22 +74,26 @@ class ShuntingYardParser {
             if (parseTokensErr != null) return ParseResult(errorText = parseTokensErr.message ?: "")
             if (tokens == null) return ParseResult( errorText = "Tokenizer returned null list of tokens")
             val isStatic = tokens.fastFilter{ token -> token.tokenType == TokenType.FUNCTION || token.tokenType == TokenType.REFERENCE }.fastAll{ token -> token.isStatic}
-            val dependencyIds: List<Long> = tokens.fastFilter { token -> token.tokenType == TokenType.REFERENCE }.fastMap { token -> token.expressionId!! }
-            if (dependencyIds.contains(id)) return ParseResult( errorText = "Expressions cannot reference themselves.")
-            val invalidDependencies: List<Long> = dependencyIds.fastFilter{ dependencyId -> isDependentOn(dependencyId, id)}
-            if (invalidDependencies.isNotEmpty()) return ParseResult( errorText = "Cyclic Dependencies Found: $dependencyIds")
-            if (!isStatic || dependencyIds.isNotEmpty()) cachedExpressionTokens[id] = ParserSnapshot(tokens = tokens, isStatic = isStatic, dependencies = dependencyIds)
+            val dependencies: List<Token> = tokens.fastFilter { token -> token.tokenType == TokenType.REFERENCE }
+            val globalDependencyIds: List<Long> = dependencies.fastFilter { token -> token.isLocalExpressionReference == false }.fastMap { token -> token.expressionId!! }
+            val localDependencyIds: List<Long> = dependencies.fastFilter { token -> token.isLocalExpressionReference == true }.fastMap { token -> token.expressionId!! }
+            if (globalDependencyIds.contains(id) || localDependencyIds.contains(id)) return ParseResult( errorText = "Expressions cannot reference themselves.")
+            val invalidDependencies: List<Long> = getOverlappingDependencies(id, globalDependencyIds + localDependencyIds)
+            if (invalidDependencies.isNotEmpty()) return ParseResult( errorText = "Cyclic Dependencies Found: $globalDependencyIds")
+            if (!isStatic || globalDependencyIds.isNotEmpty()) cachedExpressionTokens[id] = ParserSnapshot(tokens = tokens, isStatic = isStatic, globalDependencyIds = globalDependencyIds, localDependencyIds = localDependencyIds)
             return evaluate(
                 tokens = tokens,
                 isStatic = isStatic,
-                dependencies = dependencyIds,
+                globalDependencyIds = globalDependencyIds,
+                localDependencyIds = localDependencyIds
             )
         }
 
         /*
         -Actually takes the tokens and evaluates them, returning the parse result
          */
-        private fun evaluate(tokens: List<Token>, isStatic: Boolean, dependencies: List<Long>): ParseResult {
+        private fun evaluate(tokens: List<Token>, isStatic: Boolean, globalDependencyIds: List<Long>, localDependencyIds: List<Long>): ParseResult {
+            val baseParseResult = ParseResult(isStatic = isStatic, globalDependencyIds = globalDependencyIds, localDependencyIds = localDependencyIds)
             val outputQueue = ArrayDeque<Token>()
             val operatorStack = ArrayDeque<Token>()
             for (token in tokens) {
@@ -107,7 +116,7 @@ class ShuntingYardParser {
                             ")" -> {
 
                                 while (operatorStack.first().text != "(") {
-                                    if (operatorStack.isEmpty()) return ParseResult( errorText = "No opening parenthesis found", directDependencies = dependencies)
+                                    if (operatorStack.isEmpty()) return baseParseResult.copy( errorText = "No opening parenthesis found")
                                     //outputQueue.addLast(operatorStack.removeFirst())
                                     //println("-------------")
                                     //println("Token: ${operatorStack.first().text}")
@@ -115,11 +124,11 @@ class ShuntingYardParser {
                                     //println("Operator Stack: ${operatorStack.map { t -> t.text }}")
                                     addToOutputQueue(outputQueue, operatorStack.removeFirst())
                                 }
-                                if (operatorStack.first().text != "(") return ParseResult(  errorText = "No opening parenthesis found", directDependencies = dependencies )
+                                if (operatorStack.first().text != "(") return baseParseResult.copy(  errorText = "No opening parenthesis found")
                                 operatorStack.removeFirst()
                                 if (operatorStack.isNotEmpty() && operatorStack.first().tokenType == TokenType.FUNCTION) {
                                     val err = syPushThenEvaluate(outputQueue, operatorStack.removeFirst().value as Function)
-                                    if (err != null) return ParseResult( errorText = err.message ?: "", directDependencies = dependencies)
+                                    if (err != null) return baseParseResult.copy( errorText = err.message ?: "")
                                 }
                             }
                         }
@@ -146,7 +155,7 @@ class ShuntingYardParser {
                         operatorStack.addFirst(token)
 
                     }
-                    else -> return ParseResult( errorText = "Bad token: $token", directDependencies = dependencies)
+                    else -> return baseParseResult.copy( errorText = "Bad token: $token")
                 }
             }
             while (operatorStack.isNotEmpty()) {
@@ -154,23 +163,21 @@ class ShuntingYardParser {
                 //println("Token: ${operatorStack.first().text}")
                 //println("Output Queue: ${outputQueue.map { t -> t.text }}")
                 //println("Operator Stack: ${operatorStack.map { t -> t.text }}")
-                if (operatorStack.last().text == "(") return ParseResult( errorText = "Cannot end statement with an open parenthesis", directDependencies = dependencies)
+                if (operatorStack.last().text == "(") return baseParseResult.copy( errorText = "Cannot end statement with an open parenthesis")
                 //outputQueue.addLast(operatorStack.removeFirst())
                 val err = addToOutputQueue(outputQueue, operatorStack.removeFirst())
-                if (err != null) return ParseResult( errorText = err.message ?: "")
+                if (err != null) return baseParseResult.copy( errorText = err.message ?: "")
             }
             //println("---------------------")
             //println("Final Output Queue: ${outputQueue.map { t -> t.text }}")
             //println("Final Operator Stack: ${operatorStack.map { t -> t.text }}")
-            if (outputQueue.isEmpty()) return ParseResult( errorText = "Internal error, no output", directDependencies = dependencies)
+            if (outputQueue.isEmpty()) return baseParseResult.copy( errorText = "Internal error, no output")
             val finalValue = (outputQueue.first())
-            finalValue.value ?: return ParseResult( errorText = "Could not parse value", directDependencies = dependencies)
+            finalValue.value ?: return baseParseResult.copy( errorText = "Could not parse value")
             println("\n\n\nFinalValue: $finalValue")
-            return ParseResult(
+            return baseParseResult.copy(
                 result = finalValue.value,
                 resultType = finalValue.literalType,
-                isStatic = isStatic,
-                directDependencies = dependencies
             )
         }
 
@@ -204,10 +211,11 @@ class ShuntingYardParser {
             outputQueue.addLast(
                 Token(
                     text = functionCall.result.toString(),
+                    groupPath = "",
                     tokenType = TokenType.LITERAL,
                     literalType = functionCall.returnType,
                     value = functionCall.result,
-                    getExpressionId = { null!! }
+                    getExpressionId = { throw Error("The result of an expression should always be a value, never a reference to another Expression.") }
                 )
             )
             //println("Function Result: ${functionCall.result.toString()}")

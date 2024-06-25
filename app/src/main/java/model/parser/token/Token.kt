@@ -11,28 +11,31 @@ class Token(
     var tokenType: TokenType = TokenType.UNDETERMINED,
     var literalType: LiteralType = LiteralType.UNDETERMINED,
     var value: Any? = null,
+    groupPath: String,
     val getExpressionId: (String) -> Long?,
     val getExpression: (Long) -> Expression? = { null },
     val reevaluateExpression: (Long, String) -> ParseResult?  = { _, _ -> null },
     ) {
     var error: Error? = null
     var expressionId: Long? = null
+    var isLocalExpressionReference: Boolean? = null
     var isStatic = true
     init{
         if (tokenType == TokenType.UNDETERMINED) tokenType = TokenType.parseTokenType(text)
         when(tokenType){
             TokenType.REFERENCE -> {
-                val fullpath = "/" + RegexPatterns.referenceRegex.matchEntire(text)!!.groupValues[1]
+                val match = RegexPatterns.referenceRegex.matchEntire(text)!!
+                println("GROUP VALUES : ${match.groupValues.joinToString(", ")}")
+                isLocalExpressionReference = match.groupValues[1].isNotEmpty()
+                val fullpath = "${if (isLocalExpressionReference == true) groupPath else "/"}${match.groupValues[2]}"
+
                 expressionId = getExpressionId(fullpath)
                 if (expressionId != null) {
-                    //expressionReference = getExpression(expressionId)
-
                     updateReference()
                 }
                 else {
-                    error = Error("Could not find dependency: $fullpath")
+                    error = Error("Could not find dependency: ${if (isLocalExpressionReference == true) ".." else ""}$fullpath")
                 }
-
             }
             TokenType.FUNCTION -> {
                 if (literalType == LiteralType.UNDETERMINED) literalType = LiteralType.NONE
@@ -51,19 +54,16 @@ class Token(
     fun updateReference() {
         if (tokenType != TokenType.REFERENCE) return
         val id = expressionId ?: return
-        //expressionReference ?: return
-        //val expression = expressionReference!!
         val expression = getExpression(id) ?: return
 
-        if (expression.parseResult.isStatic == true){
-            literalType = expression.parseResult.resultType //?: LiteralType.NONE
+        if (expression.parseResult.isStatic){
+            literalType = expression.parseResult.resultType
             value = expression.parseResult.result
             isStatic = true
 
         } else {
             val reevaluatedResult = reevaluateExpression(id, expression.text)
                 ?: throw Error("Expecting Expression ( $id ), but not found")
-            //expressionReference = expression.copy(parseResult = parseResult)
             literalType = reevaluatedResult.resultType
             value = reevaluatedResult.result
             isStatic = reevaluatedResult.isStatic

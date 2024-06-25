@@ -12,8 +12,7 @@ import model.database.entity.ExpressionEntity
 
 @Dao
 interface ExpressionDao {
-
-
+    
     @Query("SELECT * FROM expressionEntity WHERE id LIKE (:id)")
     fun getExpression(id: Long): Flow<ExpressionEntity>
 
@@ -23,21 +22,13 @@ interface ExpressionDao {
     @Query("SELECT * FROM expressionEntity")
     fun getExpressionMap(): Flow<Map<@MapColumn(columnName = "id") Long, ExpressionEntity>>
 
-    //@Query("SELECT id, fullpath FROM expressionEntity")
-    //fun getExpressionNameToIdMap(): Flow<Map<@MapColumn(columnName = "fullpath")String, @MapColumn(columnName = "id")Long>>
     @Transaction
     @Query("SELECT id, parentId FROM expressionEntity")
     fun getExpressionNameToIdMap(): Flow<Map<@MapColumn(columnName = "parentId")Long, @MapColumn(columnName = "id")Long>>
 
-    //@Query("SELECT * FROM expressionEntity WHERE path LIKE (:path)")
-    //fun getExpressionMapAtPath(path: String): Flow<Map<@MapColumn(columnName = "id") Long, ExpressionEntity>>
     @Transaction
     @Query("SELECT * FROM expressionEntity WHERE parentId LIKE (:parentId)")
     fun getExpressionMapAtPath(parentId: Long): Flow<Map<@MapColumn(columnName = "id") Long, ExpressionEntity>>
-
-   // @Query("SELECT * FROM expressionEntity WHERE path LIKE (:path)")
-    //fun getExpressionsAtPath(path: String): Flow<List<ExpressionEntity>>
-
 
     @Upsert
     suspend fun upsertExpression(expressionEntity: ExpressionEntity): Long

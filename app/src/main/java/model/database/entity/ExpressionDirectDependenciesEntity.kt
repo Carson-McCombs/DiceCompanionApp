@@ -1,5 +1,6 @@
 package model.database.entity
 
+import androidx.compose.ui.util.fastMap
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -26,9 +27,14 @@ import model.dataObjects.Expression
 data class ExpressionDirectDependenciesEntity (
     val id: Long,
     val dependencyId: Long,
+    val isLocal: Boolean,
 ) {
     companion object{
         fun fromExpression(expression: Expression): List<ExpressionDirectDependenciesEntity> =
-            expression.parseResult.directDependencies.map { expressionDependencyId -> ExpressionDirectDependenciesEntity(id = expression.id, dependencyId = expressionDependencyId) }
+            expression.parseResult.globalDependencyIds.fastMap { expressionDependencyId ->
+                ExpressionDirectDependenciesEntity(id = expression.id, dependencyId = expressionDependencyId, isLocal = false)
+            } + expression.parseResult.localDependencyIds.fastMap { expressionDependencyId ->
+                ExpressionDirectDependenciesEntity(id = expression.id, dependencyId = expressionDependencyId, isLocal = true)
+            }
     }
 }
