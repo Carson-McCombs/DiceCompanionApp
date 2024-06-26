@@ -75,6 +75,8 @@ class GroupScreenViewModel(
         initialValue = emptyMap()
     )
 
+    val unhandledErrorState: Pair<String,Error>? = null
+
     private val _expressionTextFieldStateMap: MutableMap<Long, TextFieldState> = mutableMapOf()
 
     fun getExpressionTextFieldState(expressionId: Long): TextFieldState {
@@ -188,23 +190,28 @@ class GroupScreenViewModel(
             val name = getExpressionNameTextFieldState(expressionId).text.toString()
             val rawText = getExpressionTextFieldState(expressionId).text.toString()
             var expression = childExpressionsMap.value[expressionId]!!
-            val parseResult = ShuntingYardParser.evaluate(
-                id = expressionId,
-                rawText = rawText,
-                getGroupPath = { exprId ->
-                    repository.getExpressionGroupPath(exprId)
-                },
-                getExpressionId = { expressionFullPath: String ->
-                    repository.expressionFullPathToIdMap.value[expressionFullPath]
-                },
-                getExpression = { exprId: Long ->
-                    repository.expressionMap.value[exprId]
-                },
-                getOverlappingDependencies = {exprId, otherIds -> repository.getOverlappingDependencies(exprId, otherIds) }
-            )
-            expression = expression.copy(name = name, text = rawText, parseResult =  parseResult, updated = true)
-            repository.upsertExpression(expression)
-            if (oldText != rawText) repository.updateDependentExpressions(expression = expression)
+            try {
+                val parseResult = ShuntingYardParser.evaluate(
+                    id = expressionId,
+                    rawText = rawText,
+                    getGroupPath = { exprId ->
+                        repository.getExpressionGroupPath(exprId)
+                    },
+                    getExpressionId = { expressionFullPath: String ->
+                        repository.expressionFullPathToIdMap.value[expressionFullPath]
+                    },
+                    getExpression = { exprId: Long ->
+                        repository.expressionMap.value[exprId]
+                    },
+                    getOverlappingDependencies = {exprId, otherIds -> repository.getOverlappingDependencies(exprId, otherIds) }
+                )
+                expression = expression.copy(name = name, text = rawText, parseResult =  parseResult, updated = true)
+                repository.upsertExpression(expression)
+                if (oldText != rawText) repository.updateDependentExpressions(expression = expression)
+            } catch (error: Error) {
+                println(error)
+            }
+
         }
     }
 

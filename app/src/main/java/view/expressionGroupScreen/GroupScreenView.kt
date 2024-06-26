@@ -72,7 +72,7 @@ fun GroupScreenView(
         addChildGroup = { viewModel.addChildExpressionGroup() },
         expressionEvents = remember(viewModel.id, "expressionEvents") { ExpressionEvents.fromViewModel(viewModel)},
         groupEvents = remember(viewModel.id, "expressionEvents") { GroupEvents.fromViewModel(viewModel) },
-        groupScreenEvents = groupScreenEvents
+        groupScreenEvents = groupScreenEvents,
     )
 }
 
@@ -89,7 +89,7 @@ private fun GroupScreenView(
     addChildGroup: () -> Unit,
     expressionEvents: ExpressionEvents,
     groupEvents: GroupEvents,
-    groupScreenEvents: GroupScreenEvents
+    groupScreenEvents: GroupScreenEvents,
 ){
 
     Scaffold(

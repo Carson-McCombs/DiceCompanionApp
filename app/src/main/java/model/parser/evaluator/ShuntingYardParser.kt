@@ -96,6 +96,7 @@ class ShuntingYardParser {
             val baseParseResult = ParseResult(isStatic = isStatic, globalDependencyIds = globalDependencyIds, localDependencyIds = localDependencyIds)
             val outputQueue = ArrayDeque<Token>()
             val operatorStack = ArrayDeque<Token>()
+            //println(tokens.joinToString ("\n "))
             for (token in tokens) {
                 //println("-------------")
                 //println("Token: ${token.text}")
@@ -117,7 +118,6 @@ class ShuntingYardParser {
 
                                 while (operatorStack.first().text != "(") {
                                     if (operatorStack.isEmpty()) return baseParseResult.copy( errorText = "No opening parenthesis found")
-                                    //outputQueue.addLast(operatorStack.removeFirst())
                                     //println("-------------")
                                     //println("Token: ${operatorStack.first().text}")
                                     //println("Output Queue: ${outputQueue.map { t -> t.text }}")
@@ -138,12 +138,13 @@ class ShuntingYardParser {
                             operatorStack.addFirst(token)
                             continue
                         }
-                        //var functionA = Function.functionMap[token.text] ?: return Pair(null, Error("Unknown Function \"${operatorStack.first()}\""))
-                        //var functionB = Function.functionMap[operatorStack.first().text] ?: return Pair(null, Error("Unknown Function \"${operatorStack.first()}\""))
+                        if (operatorStack.first().tokenType == TokenType.PUNCTUATION){
+                            operatorStack.addFirst(token)
+                            continue
+                        }
                         val tokenFunction = token.value as Function
                         var otherFunction = operatorStack.first().value as Function
                         while ((otherFunction.name != "(") && (tokenFunction.precedence > otherFunction.precedence) || (tokenFunction.precedence == otherFunction.precedence && tokenFunction.associativity == AssociativityDirection.LeftToRight)) {
-                            //outputQueue.addLast(operatorStack.removeFirst())
                             //println("-------------")
                             //println("Token: ${operatorStack.first().text}")
                             //println("Output Queue: ${outputQueue.map { t -> t.text }}")
@@ -164,7 +165,6 @@ class ShuntingYardParser {
                 //println("Output Queue: ${outputQueue.map { t -> t.text }}")
                 //println("Operator Stack: ${operatorStack.map { t -> t.text }}")
                 if (operatorStack.last().text == "(") return baseParseResult.copy( errorText = "Cannot end statement with an open parenthesis")
-                //outputQueue.addLast(operatorStack.removeFirst())
                 val err = addToOutputQueue(outputQueue, operatorStack.removeFirst())
                 if (err != null) return baseParseResult.copy( errorText = err.message ?: "")
             }
