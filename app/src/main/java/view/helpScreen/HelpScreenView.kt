@@ -102,7 +102,7 @@ fun HelpScreenView(navigateUp: () -> Unit, navigateToGitHub: () -> Unit){
                         "the \"..\". For example, if I have a group named \"GroupA\" which " +
                         "contains two Expressions: \"ExpressionA\" and \"ExpressionB\", " +
                         "ExpressionB can use \"@(../ExpressionA)\", which is the same as " +
-                        "saying \"@(GroupA/ExpressionA), to reference ExpressionA. This is " +
+                        "saying \"@(GroupA/ExpressionA)\", to reference ExpressionA. This is " +
                         "mainly useful simplifying references and for " +
                         "Copying / Pasting / Templating Expressions and Groups.",
                 textAlign = TextAlign.Start,
