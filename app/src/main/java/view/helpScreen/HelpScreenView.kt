@@ -171,7 +171,7 @@ fun HelpScreenView(navigateUp: () -> Unit, navigateToGitHub: () -> Unit){
                 style = boldBodyLarge
             )
             Text(
-                text =  "This will return a pseudo-random number between x (inclusive) and y (exclusive). " +
+                text =  "This will return a pseudo-random number between \"x\" (inclusive) and \"y\" (exclusive). " +
                         "This will also cause the Expression to be dynamic as this function will return " +
                         "a new value each time it is called. \n" +
                         "For example, random ( 0, 8 ) can return any of the " +
