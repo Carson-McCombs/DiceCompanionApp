@@ -13,6 +13,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,17 +45,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalFontFamilyResolver
-import androidx.compose.ui.text.Paragraph
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import model.RegexPatterns
@@ -127,7 +123,6 @@ fun ChildExpressionView(
                 ChildExpressionView_Body(
                     expression = expression,
                     expressionTextFieldState = expressionTextFieldState,
-                    visibleState = visibleState,
                     updateExpressionText = updateExpressionText
                 )
             }
@@ -247,23 +242,12 @@ private fun ChildExpressionView_TitleBar(
 private fun ChildExpressionView_Body(
     expression: Expression,
     expressionTextFieldState: TextFieldState,
-    visibleState: MutableTransitionState<Boolean>,
     updateExpressionText: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
     val interactionSource = remember(expression.id, "expressionTextInteractionSource") { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
-    val localConfiguration = LocalConfiguration.current
-    val lineCount = Paragraph(
-        text = expression.text,
-        style = MaterialTheme.typography.bodyLarge,
-        constraints = Constraints(maxWidth = (localConfiguration.screenWidthDp * 0.8f).toInt()),
-        density = LocalDensity.current,
-        fontFamilyResolver = LocalFontFamilyResolver.current
-    ).lineCount
-    val textFieldFontSize =  with(LocalDensity.current) { MaterialTheme.typography.bodyLarge.fontSize.toDp() }
-    val textFieldHeight= remember (visibleState.currentState,textFieldFontSize, lineCount) { if (visibleState.currentState) (textFieldFontSize * (lineCount+1)) + 8.dp else textFieldFontSize + 8.dp }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -293,7 +277,7 @@ private fun ChildExpressionView_Body(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(textFieldHeight)
+                        .height(IntrinsicSize.Min)
                         .border(
                             width = 1.dp,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
