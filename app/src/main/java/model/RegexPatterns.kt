@@ -16,7 +16,7 @@ class RegexPatterns {
         val literalRegex = Regex("(\"(.*?)\")|((?<!\\.[0-9]{0,999})(?!-?[0-9]*\\.+)(-?[0-9]+))|(-?[0-9]+\\.[0-9]+)")
         val scannerRegex = Regex("(?<REFERENCE>@\\(\\s*(..)?[a-zA-Z0-9/_-]+\\s*\\))|(?<FUNCTIONS>random|roll|ceil|floor|round|max|min)|(?<OPERATORS>[-/*+%^!u])|(?<PUNCTUATIONS>[(,)])|(?<COMMENTS>\\[\".*?\"\\])|(?<INTEGERS>(?<!\\.[0-9]{0,999})(?!-?[0-9]*\\.+)([0-9]+))|(?<DOUBLES>[0-9]+\\.[0-9]+)")
         val unaryOperatorRegex = Regex("(?<=(^|[-+/*%^(,])\\s{0,999})(-)")
-        val nameRegex = Regex("[a-zA-Z0-9_-]+")
+        val nameRegex = Regex("[a-zA-Z0-9_-]*")
         fun getReferenceGroupNameAndAttribute(unparsedText: String): Pair<String, String>{
             val match = referenceRegex.matchEntire(unparsedText) ?: return Pair("","")
             val groupName = match.groupValues[1]
