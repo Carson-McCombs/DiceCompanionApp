@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -45,12 +44,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalFontFamilyResolver
+import androidx.compose.ui.text.Paragraph
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import model.RegexPatterns
@@ -186,7 +190,12 @@ private fun ResultButton(
 
 
 @Composable
-private fun ChildExpressionView_TitleBar(expression: Expression, nameTextFieldState: TextFieldState, visibleState: MutableTransitionState<Boolean>, updateName: () -> Unit){
+private fun ChildExpressionView_TitleBar(
+    expression: Expression,
+    nameTextFieldState: TextFieldState,
+    visibleState: MutableTransitionState<Boolean>,
+    updateName: () -> Unit,
+) {
     val focusManager = LocalFocusManager.current
     val interactionSource = remember(expression.id, "expressionNameInteractionSource") { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
@@ -235,15 +244,30 @@ private fun ChildExpressionView_TitleBar(expression: Expression, nameTextFieldSt
 }
 
 @Composable
-private fun ChildExpressionView_Body(expression: Expression, expressionTextFieldState: TextFieldState, visibleState: MutableTransitionState<Boolean>, updateExpressionText: () -> Unit) {
+private fun ChildExpressionView_Body(
+    expression: Expression,
+    expressionTextFieldState: TextFieldState,
+    visibleState: MutableTransitionState<Boolean>,
+    updateExpressionText: () -> Unit
+) {
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
     val interactionSource = remember(expression.id, "expressionTextInteractionSource") { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
+    val localConfiguration = LocalConfiguration.current
+    val lineCount = Paragraph(
+        text = expression.text,
+        style = MaterialTheme.typography.bodyLarge,
+        constraints = Constraints(maxWidth = (localConfiguration.screenWidthDp * 0.8f).toInt()),
+        density = LocalDensity.current,
+        fontFamilyResolver = LocalFontFamilyResolver.current
+    ).lineCount
+    val textFieldFontSize =  with(LocalDensity.current) { MaterialTheme.typography.bodyLarge.fontSize.toDp() }
+    val textFieldHeight= remember (visibleState.currentState,textFieldFontSize, lineCount) { if (visibleState.currentState) (textFieldFontSize * (lineCount+1)) + 8.dp else textFieldFontSize + 8.dp }
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = if (visibleState.currentState) 256.dp else 0.dp)
+
             .padding(8.dp)
             .zIndex(-1f)
     ) {
@@ -255,7 +279,6 @@ private fun ChildExpressionView_Body(expression: Expression, expressionTextField
                     .horizontalScroll(scrollState),
                 text = expression.parseResult.errorText,
                 color = MaterialTheme.colorScheme.error,
-                maxLines = 4,
                 softWrap = true,
                 style = MaterialTheme.typography.bodyLarge
             )
@@ -270,7 +293,7 @@ private fun ChildExpressionView_Body(expression: Expression, expressionTextField
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp)
+                        .height(textFieldHeight)
                         .border(
                             width = 1.dp,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
