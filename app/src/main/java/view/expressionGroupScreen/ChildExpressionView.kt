@@ -30,6 +30,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
@@ -70,7 +71,8 @@ fun ChildExpressionView(
     visibleState: MutableTransitionState<Boolean>,
     updateName: () -> Unit,
     updateExpressionText: () -> Unit,
-    delete: () -> Unit
+    delete: () -> Unit,
+    copy: () -> Unit,
 ) {
     Row(
         modifier = modifier
@@ -80,12 +82,19 @@ fun ChildExpressionView(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ){
-        ResultButton(
-            enabled = !expression.parseResult.isStatic,
-            evaluationState = expression.evaluationState,
-            resultText = expression.resultText,
-            updateExpressionText = updateExpressionText
-        )
+        Column{
+            if (visibleState.currentState){
+                TemporaryCopyButton (copy = copy)
+
+            }
+            ResultButton(
+                enabled = !expression.parseResult.isStatic,
+                evaluationState = expression.evaluationState,
+                resultText = expression.resultText,
+                updateExpressionText = updateExpressionText
+            )
+        }
+
         DismissibleCard(
             modifier = modifier
                 .wrapContentHeight()
@@ -121,6 +130,24 @@ fun ChildExpressionView(
         }
     }
 
+}
+
+
+@Composable
+private fun TemporaryCopyButton(
+    copy: () -> Unit
+){
+    Button(
+        modifier = Modifier
+            .fillMaxWidth(.15f)
+            .aspectRatio(1f)
+            .padding(4.dp),
+        onClick = copy,
+        shape = MaterialTheme.shapes.large,
+        contentPadding = PaddingValues(2.dp)
+    ){
+        Icon(imageVector = Icons.Default.Add, contentDescription = "Copies Expression")
+    }
 }
 
 @Composable
@@ -354,6 +381,7 @@ private fun ChildExpressionView_Preview_Internal(isVisible: Boolean = true){
                         updateName = {},
                         updateExpressionText = {},
                         delete = {},
+                        copy = {}
                     )
                 }
             }

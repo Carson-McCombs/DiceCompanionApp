@@ -11,9 +11,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import model.dataObjects.ClipboardReference
 import model.dataObjects.Group
 import model.database.AppDatabase
 import model.database.AppRepository
@@ -32,7 +34,6 @@ class MainActivity : ComponentActivity() {
 
 
     private fun ensureRootGroup(): Long = runBlocking(Dispatchers.IO) {
-        //val root = database.groupDao().getGroup(fullpath = "/")
         val root = database.groupDao().getRootGroup()
         if (root != null) {
             return@runBlocking root.id
@@ -42,7 +43,6 @@ class MainActivity : ComponentActivity() {
                 Group(
                     name = "",
                     parentId = null,
-                    //path = null,
                     templateName = ""
                 )
 
@@ -66,7 +66,8 @@ class MainActivity : ComponentActivity() {
                 ) {
                     AppNavHost(
                         rootId = rootId,
-                        repository = repository
+                        repository = repository,
+                        clipboardReference = ClipboardReference(repository = repository, scope = lifecycleScope)
                     )
                 }
 

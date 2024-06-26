@@ -18,7 +18,7 @@ import model.database.entity.ExpressionEntity
 import model.database.entity.GroupEntity
 
 class AppRepository(
-    val scope: CoroutineScope,
+    scope: CoroutineScope,
     private val database: AppDatabase
 ) {
 
@@ -59,25 +59,20 @@ class AppRepository(
         For Updating full paths and Expression references
     */
 
-    val groupChildExpressionMap: StateFlow<Map<Long, List<Expression>>> = expressionMap.map { allExpressionsMap ->
-        allExpressionsMap.map { entry -> entry.value }.groupBy { expression -> expression.parentId }.toMap()
+    val groupMap: StateFlow<Map<Long, Group>> = database.groupDao().getGroupMap().map { groupEntityMapState ->
+        groupEntityMapState.mapValues { entry -> entry.value.toGroup() }
     }.stateIn(
         scope = scope,
         started = SharingStarted.Eagerly,
         initialValue = emptyMap()
     )
-    val groupDescendantsMap: StateFlow<Map<Long?, List<Long>>> = database.groupDao().getGroupDescendantsMap().stateIn(
+
+    val groupDescendantsMap: StateFlow<Map<Long, List<Long>>> = database.groupDao().getGroupDescendantsMap().stateIn(
         scope = scope,
         started = SharingStarted.Eagerly,
         initialValue = emptyMap()
     )
-
-
-    /*
-    For creating copies and templates of Expressions
-     */
-
-    val expressionLocalDirectDependencies: StateFlow<Map<Long, List<Long>>> = database.expressionDependencyDao().getExpressionDirectDependenciesMap(isLocal = true).stateIn(
+    val groupExpressionDescendantsMap: StateFlow<Map<Long, List<Long>>> = database.groupDao().getExpressionDescendantsMap().stateIn(
         scope = scope,
         started = SharingStarted.Eagerly,
         initialValue = emptyMap()
@@ -128,14 +123,13 @@ class AppRepository(
     suspend fun deleteExpression(expression: Expression) = database.expressionDao().deleteExpression(ExpressionEntity.fromExpression(expression))
 
     @WorkerThread
-    fun deleteExpressionDependency(id: Long) = database.expressionDependencyDao().deleteDependencies(id)
-
-    @WorkerThread
     fun getGroupWithChildren(id: Long): Flow<GroupWithChildren> = database.groupWithChildrenDao().getExpressionGroupWithChildren(id).map{ expressionGroupWithChildrenEntity -> expressionGroupWithChildrenEntity.toExpressionGroupWithChildren()}
 
     @WorkerThread
     suspend fun upsertGroup(group: Group): Long = database.groupDao().upsertGroup(GroupEntity.fromExpressionGroup(group))
 
+    @WorkerThread
+    suspend fun upsertGroups(groups: List<Group>): List<Long> = database.groupDao().upsertGroups(groups.fastMap { group -> GroupEntity.fromExpressionGroup(group) })
 
     @WorkerThread
     suspend fun deleteGroup(group: Group) = database.groupDao().deleteGroup(GroupEntity.fromExpressionGroup(group))

@@ -2,10 +2,6 @@ package viewModel
 
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.ui.util.fastFilter
-import androidx.compose.ui.util.fastFilterNotNull
-import androidx.compose.ui.util.fastFlatMap
-import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -19,6 +15,9 @@ import model.dataObjects.Expression
 import model.dataObjects.Group
 import model.dataObjects.GroupWithChildren
 import model.database.AppRepository
+import model.database.getUpdatedDependentExpressionReferences
+import model.database.updateDependentExpressions
+import model.database.updateGroupDependents
 import model.parser.evaluator.ShuntingYardParser
 
 class GroupScreenViewModel(
@@ -134,25 +133,21 @@ class GroupScreenViewModel(
         if ( childGroupsMap.value[groupId]?.name == _groupNameTextFieldStateMap[groupId]?.text.toString()) return
         viewModelScope.launch(Dispatchers.IO) {
             val name = getGroupNameTextFieldState(groupId).text.toString()
-            val expressionGroup = childGroupsMap.value[groupId]!!.copy(name = name)
-            repository.upsertGroup(expressionGroup)
-            updateGroupDependents(group = expressionGroup)
+            val group = childGroupsMap.value[groupId]!!.copy(name = name)
+            repository.upsertGroup(group)
+            val oldFullPath = repository.groupIdToFullPathMap.value[group.id]!!
+            val newFullPath = oldFullPath.replaceAfterLast('/', group.name)
+            repository.updateGroupDependents(
+                groupId = group.id,
+                oldFullPath = oldFullPath,
+                newFullPath = newFullPath
+            )
 
         }
 
     }
 
-    private suspend fun updateGroupDependents(group: Group) {
-        val oldFullPath = repository.groupIdToFullPathMap.value[group.id]!!
-        val newFullPath = oldFullPath.replaceAfterLast('/', group.name)
-        val childExpressions = repository.groupDescendantsMap.value[group.id] ?: emptyList()
-        val directDependentIds = childExpressions + childExpressions.fastFlatMap { expressionId -> repository.expressionAllDirectDependentsMap.value[expressionId] ?: emptyList() }.distinct()
-        val directDependents = directDependentIds.fastMap { expressionId -> repository.expressionMap.value[expressionId] }.fastFilterNotNull()
-        val affectedExpressions = directDependents.fastFlatMap { expression ->
-            updateDependentExpressionReferences(expression = expression, oldFullPath = oldFullPath.drop(1), newFullPath = newFullPath.drop(1))
-        }.distinctBy { expression -> expression.id }
-        repository.upsertExpressions(affectedExpressions)
-    }
+
 
     fun deleteGroup(groupId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -171,11 +166,11 @@ class GroupScreenViewModel(
             val oldFullPath = repository.expressionIdToFullPathMap.value[expressionId]!!
             expression = expression.copy(name = name)
             repository.upsertExpression(expression, false)
-            repository.upsertExpressions(updateDependentExpressionReferences(
+            repository.getUpdatedDependentExpressionReferences(
                 expression = expression,
                 oldFullPath = oldFullPath.drop(1),
-                newFullPath = oldFullPath.replaceAfterLast('/', name).drop(1)
-                )
+                newFullPath = oldFullPath.replaceAfterLast('/', name).drop(1),
+                updateRepository = true
             )
         }
     }
@@ -209,49 +204,12 @@ class GroupScreenViewModel(
             )
             expression = expression.copy(name = name, text = rawText, parseResult =  parseResult, updated = true)
             repository.upsertExpression(expression)
-            if (oldText != rawText) updateDependentExpressions(expression = expression)
+            if (oldText != rawText) repository.updateDependentExpressions(expression = expression)
         }
-    }
-    private suspend fun updateDependentExpressionReferences(expression: Expression, oldFullPath: String, newFullPath: String): List<Expression> {
-        val dependentIds = repository.expressionAllDirectDependentsMap.value[expression.id] ?: return emptyList()
-        val dependents = dependentIds.map { dependentId -> repository.expressionMap.value[dependentId] }.fastFilterNotNull()
-        val updatedDependents = dependents.fastMap { dependent -> Expression.renameReference(expression = dependent, oldFullPath = oldFullPath, newFullPath = newFullPath) }
-        return updatedDependents
     }
 
-    private suspend fun updateDependentExpressions(expression: Expression) {
-        val directDependentsFullPath = repository.expressionAllDirectDependentsMap.value[expression.id] ?: return
-        val directDependents: List<Expression> =
-            directDependentsFullPath.map { fullpath -> repository.expressionMap.value[fullpath]!! }
-        if (!expression.parseResult.isStatic){
-            repository.upsertExpressions( directDependents.fastMap { directDependent -> directDependent.copy(updated = false) })
-            return
-        }
-        //val dynamicDirectDependents: List<Expression> = directDependents.fastFilter { dependentExpression -> !dependentExpression.parseResult.isStatic }.fastMap { directDependent -> directDependent.copy(updated = false) }
-        val staticDirectDependents: List<Expression> = directDependents.fastFilter { dependentExpression -> dependentExpression.parseResult.isStatic }
-        val reevaluatedDirectDependents: List<Expression> = staticDirectDependents.map { dependentExpression ->
-            dependentExpression.copy(
-                parseResult = ShuntingYardParser.reevaluate(
-                    id = dependentExpression.id,
-                    rawText = dependentExpression.text,
-                    getGroupPath = { exprId ->
-                        repository.getExpressionGroupPath(exprId)
-                    },
-                    getExpressionId = { expressionFullPath: String ->
-                        repository.expressionFullPathToIdMap.value[expressionFullPath]
-                    },
-                    getExpression = { expressionId: Long ->
-                        repository.expressionMap.value[expressionId]
-                    },
-                    getOverlappingDependencies = {exprId, otherIds -> repository.getOverlappingDependencies(exprId, otherIds) }
-                )
-            )
-        }
-        repository.upsertExpressions(reevaluatedDirectDependents)
-        reevaluatedDirectDependents.forEach{ dependentExpression ->
-            updateDependentExpressions(expression = dependentExpression)
-        }
-    }
+
+
 
 
 

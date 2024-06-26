@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -47,15 +48,14 @@ import model.parser.token.LiteralType
 import view.ui.theme.DiceCompanionTheme
 import viewModel.ExpressionEvents
 import viewModel.GroupEvents
+import viewModel.GroupScreenEvents
 import viewModel.GroupScreenViewModel
 
 @Composable
 fun GroupScreenView(
     modifier: Modifier = Modifier,
     viewModel: GroupScreenViewModel,
-    navigateTo: (Long) -> Unit,
-    navigateUp: () -> Unit,
-    navigateToHelpScreen: () -> Unit
+    groupScreenEvents: GroupScreenEvents
 ) {
     val isRootState = viewModel.isRootState.collectAsState()
     val fullpathState = viewModel.fullPathState.collectAsState()
@@ -63,6 +63,7 @@ fun GroupScreenView(
     val childGroupMapState = viewModel.childGroupsMap.collectAsState(emptyMap())
     GroupScreenView(
         modifier = modifier,
+        id = remember { mutableLongStateOf(viewModel.id) },
         fullpathState = fullpathState,
         isRoot = isRootState,
         childExpressionMapState = childExpressionMapState,
@@ -71,15 +72,14 @@ fun GroupScreenView(
         addChildGroup = { viewModel.addChildExpressionGroup() },
         expressionEvents = remember(viewModel.id, "expressionEvents") { ExpressionEvents.fromViewModel(viewModel)},
         groupEvents = remember(viewModel.id, "expressionEvents") { GroupEvents.fromViewModel(viewModel) },
-        navigateTo = navigateTo,
-        navigateUp = navigateUp,
-        navigateToHelpScreen = navigateToHelpScreen
+        groupScreenEvents = groupScreenEvents
     )
 }
 
 @Composable
 private fun GroupScreenView(
     modifier: Modifier = Modifier,
+    id: State<Long>,
     fullpathState: State<String>,
     isRoot: State<Boolean>,
     childExpressionMapState: State<Map<Long, Expression>>,
@@ -89,9 +89,7 @@ private fun GroupScreenView(
     addChildGroup: () -> Unit,
     expressionEvents: ExpressionEvents,
     groupEvents: GroupEvents,
-    navigateTo: (Long) -> Unit,
-    navigateUp: () -> Unit,
-    navigateToHelpScreen: () -> Unit
+    groupScreenEvents: GroupScreenEvents
 ){
 
     Scaffold(
@@ -101,8 +99,8 @@ private fun GroupScreenView(
             ExpressionGroupScreenTopBar(
                 fullpathState = fullpathState,
                 isRoot = isRoot,
-                navigateUp = navigateUp,
-                navigateToHelpScreen = navigateToHelpScreen
+                navigateUp = groupScreenEvents.navigateUp,
+                navigateToHelpScreen = groupScreenEvents.navigateToHelpScreen
             )
 
         },
@@ -121,7 +119,8 @@ private fun GroupScreenView(
                 AddChildDropDownMenu(
                     isExpandedState = isExpandedState,
                     addExpression = addChildExpression,
-                    addGroup = addChildGroup
+                    addGroup = addChildGroup,
+                    paste = { groupScreenEvents.paste(id.value) }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -145,19 +144,22 @@ private fun GroupScreenView(
                     ChildExpressionGroupView(
                         modifier = Modifier.padding(4.dp),
                         group = expressionGroup,
-                        navigateTo = navigateTo,
+                        navigateTo = groupScreenEvents.navigateTo,
                         nameTextFieldState = groupEvents.getNameTextFieldState(expressionGroup.id),
                         updateName = {
                             groupEvents.updateName(expressionGroup.id)
                         },
                         delete = {
                             groupEvents.delete(expressionGroup.id)
+                        },
+                        copy = {
+                            groupScreenEvents.copy(expressionGroup.id, true)
                         }
                     )
                 }
                 items(childExpressionMapState.value.values.toList()){ expression ->
                     ChildExpressionView(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(4.dp),
                         expression = expression,
                         nameTextFieldState = expressionEvents.getNameTextFieldState(expression.id),
                         expressionTextFieldState = expressionEvents.getTextFieldState(expression.id),
@@ -170,6 +172,9 @@ private fun GroupScreenView(
                         },
                         delete = {
                             expressionEvents.delete(expression.id)
+                        },
+                        copy = {
+                            groupScreenEvents.copy(expression.id, false)
                         }
                     )
                 }
@@ -221,6 +226,7 @@ private fun AddChildDropDownMenu(
     isExpandedState: MutableState<Boolean>,
     addExpression: () -> Unit,
     addGroup: () -> Unit,
+    paste: () -> Unit,
 ) {
     DropdownMenu(
         expanded = isExpandedState.value,
@@ -244,6 +250,15 @@ private fun AddChildDropDownMenu(
                 )
             },
             onClick = addGroup
+        )
+        Spacer(modifier = Modifier.size(8.dp))
+        DropdownMenuItem(
+            text = {
+                Text(
+                    text = "Paste",
+                )
+            },
+            onClick = paste
         )
     }
 }
@@ -363,16 +378,15 @@ private fun GroupScreenView_Preview() {
     DiceCompanionTheme {
         GroupScreenView(
             fullpathState = remember{ mutableStateOf("//testfullpath") },
+            id = remember { mutableLongStateOf(0L) },
             isRoot = remember{ mutableStateOf(false) },
             childExpressionMapState = childExpressionMapState,
             childGroupMapState = childGroupMapState,
-            addChildExpression = { },
-            addChildGroup = {  },
+            addChildExpression = {},
+            addChildGroup = {},
             expressionEvents = expressionEvents,
             groupEvents = groupEvents,
-            navigateTo = {},
-            navigateUp = {},
-            navigateToHelpScreen = {}
+            groupScreenEvents = GroupScreenEvents()
         )
     }
 

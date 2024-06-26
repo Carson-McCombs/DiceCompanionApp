@@ -5,17 +5,19 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,6 +48,7 @@ fun ChildExpressionGroupView(
     navigateTo: (Long) -> Unit,
     updateName: () -> Unit,
     delete: () -> Unit,
+    copy: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val interactionSource =
@@ -72,10 +75,11 @@ fun ChildExpressionGroupView(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Spacer(
+            TemporaryCopyButton(copy = copy)
+            /*Spacer(
                 modifier = Modifier.size(1.dp)
 
-            )
+            )*/
             BasicTextField(
                 modifier = Modifier
                     .wrapContentHeight(),
@@ -107,7 +111,22 @@ fun ChildExpressionGroupView(
     }
 }
 
-
+@Composable
+private fun TemporaryCopyButton(
+    copy: () -> Unit
+){
+    Button(
+        modifier = Modifier
+            .fillMaxWidth(.15f)
+            .aspectRatio(1f)
+            .padding(4.dp),
+        onClick = copy,
+        shape = MaterialTheme.shapes.large,
+        contentPadding = PaddingValues(2.dp)
+    ){
+        Icon(imageVector = Icons.Default.Add, contentDescription = "Copies Expression")
+    }
+}
 @Preview(
     name = "Dark Mode",
     showBackground = true,
@@ -132,7 +151,8 @@ private fun ChildGroupView_Preview() {
                 nameTextFieldState = TextFieldState(initialText = group.name),
                 navigateTo = {},
                 updateName = {},
-                delete = {}
+                delete = {},
+                copy = {}
             )
         }
 
