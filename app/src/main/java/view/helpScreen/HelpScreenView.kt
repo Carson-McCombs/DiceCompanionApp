@@ -102,7 +102,7 @@ fun HelpScreenView(navigateUp: () -> Unit, navigateToGitHub: () -> Unit){
                         "the \"..\". For example, if I have a group named \"GroupA\" which " +
                         "contains two Expressions: \"ExpressionA\" and \"ExpressionB\", " +
                         "ExpressionB can use \"@(../ExpressionA)\", which is the same as " +
-                        "saying \"@(GroupA/ExpressionA), to reference ExpressionA. This is " +
+                        "saying \"@(GroupA/ExpressionA)\", to reference ExpressionA. This is " +
                         "mainly useful simplifying references and for " +
                         "Copying / Pasting / Templating Expressions and Groups.",
                 textAlign = TextAlign.Start,
@@ -171,7 +171,7 @@ fun HelpScreenView(navigateUp: () -> Unit, navigateToGitHub: () -> Unit){
                 style = boldBodyLarge
             )
             Text(
-                text =  "This will return a pseudo-random number between x (inclusive) and y (exclusive). " +
+                text =  "This will return a pseudo-random number between \"x\" (inclusive) and \"y\" (exclusive). " +
                         "This will also cause the Expression to be dynamic as this function will return " +
                         "a new value each time it is called. \n" +
                         "For example, random ( 0, 8 ) can return any of the " +
