@@ -32,7 +32,7 @@ class ClipboardReference(private val scope: CoroutineScope, private val reposito
         scope.launch(Dispatchers.IO) {
             val groupDescendantsMapState = repository.groupDescendantsMap.value
             val groupExpressionDescendantsMapState = repository.groupExpressionDescendantsMap.value
-            deepGroupIds = (groupIds + groupIds.fastFlatMap { groupId -> groupDescendantsMapState[groupId]!! }).distinct()
+            deepGroupIds = (groupIds + groupIds.fastFlatMap { groupId -> groupDescendantsMapState[groupId]?: emptyList() }).distinct()
             deepExpressionIds = (expressionIds + groupIds.fastFlatMap { groupId -> groupExpressionDescendantsMapState[groupId]!! })
 
             val groupMapState = repository.groupMap.value

@@ -5,7 +5,7 @@ class RegexPatterns {
     companion object{
         val spacingRegex = Regex("(([0-9](?=([^0-9(,\\s.])))|([a-zA-Z](?=[^a-zA-Z(,\\s]))|([(,)+\\-*/$%^](?=\\S)))")
         val moreThanOneSpaces = Regex("\\s{2,}")
-        val referenceRegex = Regex("@\\(\\s*(?<LOCAL>..)?(?<PATH>[a-zA-Z0-9/_-]+)\\s*\\)")
+        val referenceRegex = Regex("@\\(\\s*(?<LOCAL>\\.\\.)?(?<PATH>[a-zA-Z0-9/_-]+)\\s*\\)")
         val operatorRegex = Regex("[-+/*%^u]")
         val functionRegex = Regex("random|roll|ceil|floor|round|min|max")
         val punctuationRegex = Regex("[(,)]")
