@@ -199,7 +199,7 @@ fun HelpScreenView(navigateUp: () -> Unit, navigateToGitHub: () -> Unit){
                 style = MaterialTheme.typography.titleLarge
             )
             Text(
-                text =  "-Copy & Paste Expressions / Groups\n" +
+                text =  "-Better Selection for Copy & Paste Expressions / Groups\n" +
                         "-Expression and Group Templates: Save a copy of an Expression or Group. If it is an Expression, " +
                         "then lock its text. If it is a Group, lock all of the Expressions and Groups that it contains, but allow " +
                         "the addition of new Expressions and Groups.\n" +
