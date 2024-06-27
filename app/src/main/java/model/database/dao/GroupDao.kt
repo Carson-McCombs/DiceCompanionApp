@@ -52,9 +52,7 @@ interface GroupDao {
             "INNER JOIN descendant_group_table AS groups " +
             "ON groups.groupId = expressions.parentId OR groups.id = expressions.parentId" +
             ") " +
-            "SELECT DISTINCT expressions.id AS parentId, expressions.expressionId AS expressionIds FROM descendant_expression_table AS expressions " +
-            "UNION ALL " +
-            "SELECT expressionEntity.parentId AS parentId, expressionEntity.id AS expressionIds FROM expressionEntity")
+            "SELECT DISTINCT expressions.id AS parentId, expressions.expressionId AS expressionIds FROM descendant_expression_table AS expressions")
     fun getExpressionDescendantsMap(): Flow<Map<@MapColumn(columnName = "parentId") Long, List<@MapColumn(columnName = "expressionIds")Long>>>
 
     @Upsert
