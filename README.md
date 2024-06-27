@@ -62,7 +62,9 @@ This will return a pseudo-random number between "x" (inclusive) and "y" (exclusi
 This will return a roll "y" sided dice ( a random number between 1 (inclusive) and y (inclusive) ) "x" number of times. This will also cause the Expression to be *dynamic* as this function will return a new value each time it is called. 
 For example, roll ( 3, 8 ) can return will return ( random ( 1, 9 ) + random ( 1, 9 ) + random ( 1, 9 )
 
-### Examples
+### Examples:
+
+#### Note: The Copy button is a placeholder and will not be present in the final release
 
 An example where two Expressions are created, named "DamageLocal" and "DamageGlobal". DamageLocal is created with a local reference to the existing "Level" Expression, while DamageGlobal has a global reference to the same Expression.
 
