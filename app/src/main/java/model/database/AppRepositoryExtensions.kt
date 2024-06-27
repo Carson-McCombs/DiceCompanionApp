@@ -42,6 +42,8 @@ suspend fun AppRepository.updateDependentExpressions(expression: Expression) {
         upsertExpressions( directDependents.fastMap { directDependent -> directDependent.copy(updated = false) })
         return
     }
+    val dynamicDirectDependents: List<Expression> = directDependents.fastFilter { dependentExpression -> !dependentExpression.parseResult.isStatic }.fastMap { dependentExpression -> dependentExpression.copy(updated = false) }
+    upsertExpressions(dynamicDirectDependents)
     val staticDirectDependents: List<Expression> = directDependents.fastFilter { dependentExpression -> dependentExpression.parseResult.isStatic }
     val reevaluatedDirectDependents: List<Expression> = staticDirectDependents.map { dependentExpression ->
         dependentExpression.copy(
