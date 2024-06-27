@@ -1,6 +1,6 @@
 ## About the Project
 
-Currently in closed testing before release on Google Playstore. Written in Kotlin Compose and Android Studio Koala / Jellyfish. Developed for Android SDK 34 ( minimum SDK 26 ). Uses Kotlin Rooms and SQLite for referencing the local database. Created with Kotlin Flows and concurrency principles to improve performance. Uses the Shunting-Yard Algorithm for evaluating text. Intended to make it easier to play any games with complex dice rolls, such as Tabletop Roleplaying Games ( i.e. Dungeons and Dragons, Pathfinder, etc. ).
+Currently in closed testing before release on Google Playstore. Written in Kotlin Compose and Android Studio Koala / Jellyfish. Developed for Android SDK 34 ( minimum SDK 26 ). Uses Kotlin Rooms and SQLite for referencing the local database. Created with Kotlin Flows and Coroutines to improve performance. Uses the Shunting-Yard Algorithm for evaluating text. Intended to make it easier to play any games with complex dice rolls, such as Tabletop Roleplaying Games ( i.e. Dungeons and Dragons, Pathfinder, etc. ).
 
 ### Built With:
 
