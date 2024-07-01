@@ -43,6 +43,8 @@ class ClipboardReference(
         return groupSelectionStateMap[groupId] ?: mutableStateOf(false)
     }
     fun clear() {
+        expressionSelectionStateMap.values.forEach { state -> state.value = false }
+        groupSelectionStateMap.values.forEach { state -> state.value = false }
         expressionIds.clear()
         groupIds.clear()
         deepExpressions = emptyList()
