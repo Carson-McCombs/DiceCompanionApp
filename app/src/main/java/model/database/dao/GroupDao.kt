@@ -40,7 +40,7 @@ interface GroupDao {
 
     @Transaction
     @Query("WITH descendant_group_table (id, groupId) AS ( " +
-            "SELECT groupEntity.parentId, groupEntity.id FROM groupEntity WHERE groupEntity.parentId IS NOT NULL " +
+            "SELECT groupEntity.id, groupEntity.id FROM groupEntity WHERE groupEntity.parentId IS NOT NULL " +
             "UNION ALL " +
             "SELECT group_table.id AS parentId, child.id AS groupId " +
             "FROM groupEntity AS child " +
