@@ -40,6 +40,9 @@ interface ExpressionDao {
     @Delete
     suspend fun deleteExpression(expressionEntity: ExpressionEntity)
 
+    @Query("DELETE FROM expressionEntity WHERE id IN (:ids)")
+    suspend fun deleteExpressions(ids: List<Long>)
+
     @Query("DELETE FROM expressionEntity")
     suspend fun deleteAllExpression()
 }

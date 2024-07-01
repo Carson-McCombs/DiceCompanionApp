@@ -3,6 +3,9 @@ package view.navigation
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.core.content.ContextCompat
@@ -28,6 +31,8 @@ fun AppNavHost(
     clipboardReference: ClipboardReference,
     rootId: Long
 ) {
+    val selectionMode = remember(0) { MutableTransitionState(false)}
+    val clipboard = remember(0) { clipboardReference }
     NavHost(
         navController = navController,
         startDestination = "expressionGroup?id={id}"
@@ -41,9 +46,29 @@ fun AppNavHost(
                     type = NavType.LongType
                     defaultValue = rootId
                 }
-            )
+            ),
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { width -> width  }
+                )
+            },
+            exitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { width -> -width  }
+                )
+            },
+            popEnterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { width -> -width  }
+                )
+            },
+            popExitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { width -> width  }
+                )
+            },
         ){ backStackEntry ->
-            val clipboard = remember(0) { clipboardReference }
+
             val id = backStackEntry.arguments!!.getLong("id")
             val screenViewModel = viewModel<GroupScreenViewModel>(
                 key = id.toString(),
@@ -55,12 +80,20 @@ fun AppNavHost(
             GroupScreenView(
                 viewModel = screenViewModel,
                 groupScreenEvents = GroupScreenEvents(
-                    copy = { copiedId: Long, isGroup: Boolean ->
-                        if (isGroup) clipboard.copy(emptyList(), listOf(copiedId))
-                        else  clipboard.copy( listOf(copiedId), emptyList())
+                    setSelectionMode = { mode ->
+                        selectionMode.targetState = mode
+                        if (!mode) {
+                            clipboard.clear()
+                        }
                     },
-                    paste = { pastedId: Long ->
-                        clipboard.paste(pastedId)
+                    copySelection = {
+                        clipboard.copy()
+                    },
+                    pasteSelection = { parentGroupId: Long ->
+                        clipboard.pasteTo(parentGroupId)
+                    },
+                    deleteSelection = {
+                        clipboard.delete()
                     },
                     navigateTo = { expressionGroupId ->
                         navController.navigate(
@@ -70,7 +103,8 @@ fun AppNavHost(
                     navigateUp = { navController.navigateUp() },
                     navigateToHelpScreen = { navController.navigate("settings") }
                 ),
-
+                selectionMode = selectionMode,
+                clipboardReference = clipboardReference
             )
 
         }

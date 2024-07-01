@@ -29,24 +29,25 @@ fun DismissibleCard(
     onSettle: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
+
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = {
             return@rememberSwipeToDismissBoxState when (it) {
                 SwipeToDismissBoxValue.StartToEnd -> {
                     onStartToEnd()
-                    true
+                    false
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
                     onEndToStart()
-                    true
+                    false
                 }
                 SwipeToDismissBoxValue.Settled -> {
                     onSettle()
-                    false
+                    true
                 }
             }
         },
-        positionalThreshold = {totalDistance -> totalDistance / 2 }
+        positionalThreshold = {totalDistance -> totalDistance / 4 }
     )
     SwipeToDismissBox(
         state = dismissState,

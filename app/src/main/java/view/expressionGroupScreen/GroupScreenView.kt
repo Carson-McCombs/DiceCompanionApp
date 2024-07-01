@@ -1,10 +1,14 @@
 package view.expressionGroupScreen
 
 import android.content.res.Configuration
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,14 +16,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -37,15 +45,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import model.dataObjects.ClipboardReference
 import model.dataObjects.Expression
 import model.dataObjects.Group
 import model.dataObjects.ParseResult
 import model.parser.evaluator.ShuntingYardParser
 import model.parser.token.LiteralType
 import view.ui.theme.DiceCompanionTheme
+import view.ui.theme.defaultIconButtonPadding
+import view.ui.theme.defaultIconSize
 import viewModel.ExpressionEvents
 import viewModel.GroupEvents
 import viewModel.GroupScreenEvents
@@ -55,7 +68,9 @@ import viewModel.GroupScreenViewModel
 fun GroupScreenView(
     modifier: Modifier = Modifier,
     viewModel: GroupScreenViewModel,
-    groupScreenEvents: GroupScreenEvents
+    groupScreenEvents: GroupScreenEvents,
+    selectionMode: MutableTransitionState<Boolean>,
+    clipboardReference: ClipboardReference
 ) {
     val isRootState = viewModel.isRootState.collectAsState()
     val fullpathState = viewModel.fullPathState.collectAsState()
@@ -70,9 +85,10 @@ fun GroupScreenView(
         childGroupMapState = childGroupMapState,
         addChildExpression = { viewModel.addChildExpression() },
         addChildGroup = { viewModel.addChildExpressionGroup() },
-        expressionEvents = remember(viewModel.id, "expressionEvents") { ExpressionEvents.fromViewModel(viewModel)},
-        groupEvents = remember(viewModel.id, "expressionEvents") { GroupEvents.fromViewModel(viewModel) },
+        expressionEvents = remember(viewModel.id, "expressionEvents") { ExpressionEvents.fromViewModel(viewModel, clipboardReference)},
+        groupEvents = remember(viewModel.id, "expressionEvents") { GroupEvents.fromViewModel(viewModel, clipboardReference) },
         groupScreenEvents = groupScreenEvents,
+        selectionMode = selectionMode
     )
 }
 
@@ -90,6 +106,7 @@ private fun GroupScreenView(
     expressionEvents: ExpressionEvents,
     groupEvents: GroupEvents,
     groupScreenEvents: GroupScreenEvents,
+    selectionMode: MutableTransitionState<Boolean>,
 ){
 
     Scaffold(
@@ -100,7 +117,11 @@ private fun GroupScreenView(
                 fullpathState = fullpathState,
                 isRoot = isRoot,
                 navigateUp = groupScreenEvents.navigateUp,
-                navigateToHelpScreen = groupScreenEvents.navigateToHelpScreen
+                navigateToHelpScreen = groupScreenEvents.navigateToHelpScreen,
+                selectionMode = selectionMode,
+                deleteSelection = groupScreenEvents.deleteSelection,
+                copySelection = groupScreenEvents.copySelection,
+                pasteSelection = { groupScreenEvents.pasteSelection(id.value) }
             )
 
         },
@@ -120,7 +141,7 @@ private fun GroupScreenView(
                     isExpandedState = isExpandedState,
                     addExpression = addChildExpression,
                     addGroup = addChildGroup,
-                    paste = { groupScreenEvents.paste(id.value) }
+                    paste = { groupScreenEvents.pasteSelection(id.value) }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -131,51 +152,60 @@ private fun GroupScreenView(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            horizontalAlignment = Alignment.CenterHorizontally,
+
+            horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.Top
         ){
             LazyColumn(
-                modifier = Modifier.wrapContentHeight(),
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .fillMaxWidth()
+                    .padding(16.dp),
             ) {
                 item{
                     Spacer(modifier = Modifier.height(16.dp))
                 }
                 items(childGroupMapState.value.values.toList()){ expressionGroup ->
-                    ChildExpressionGroupView(
-                        modifier = Modifier.padding(4.dp),
+                    ChildGroupView(
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .fillMaxWidth()
+                            .wrapContentHeight(),
                         group = expressionGroup,
                         navigateTo = groupScreenEvents.navigateTo,
                         nameTextFieldState = groupEvents.getNameTextFieldState(expressionGroup.id),
+                        selectionState = groupEvents.getSelectionState(expressionGroup.id),
+                        selectionMode = selectionMode,
                         updateName = {
                             groupEvents.updateName(expressionGroup.id)
                         },
-                        delete = {
+                        /*delete = {
                             groupEvents.delete(expressionGroup.id)
-                        },
-                        copy = {
-                            groupScreenEvents.copy(expressionGroup.id, true)
-                        }
+                        },*/
+
                     )
                 }
                 items(childExpressionMapState.value.values.toList()){ expression ->
                     ChildExpressionView(
-                        modifier = Modifier.padding(4.dp),
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .fillMaxWidth()
+                            .wrapContentHeight(),
                         expression = expression,
                         nameTextFieldState = expressionEvents.getNameTextFieldState(expression.id),
                         expressionTextFieldState = expressionEvents.getTextFieldState(expression.id),
                         visibleState = expressionEvents.getIsCollapsedState(expression.id),
+                        selectionState = expressionEvents.getSelectionState(expression.id),
+                        selectionMode = selectionMode,
                         updateName = {
                             expressionEvents.updateName(expression.id)
                         },
                         updateExpressionText = {
                             expressionEvents.updateText(expression.id)
                         },
-                        delete = {
+                        /*delete = {
                             expressionEvents.delete(expression.id)
-                        },
-                        copy = {
-                            groupScreenEvents.copy(expression.id, false)
-                        }
+                        }*/
                     )
                 }
             }
@@ -189,36 +219,187 @@ private fun ExpressionGroupScreenTopBar(
     fullpathState: State<String>,
     navigateUp: () -> Unit,
     navigateToHelpScreen: () -> Unit,
+    selectionMode: MutableTransitionState<Boolean>,
+    copySelection: () -> Unit,
+    pasteSelection: () -> Unit,
+    deleteSelection: () -> Unit,
 ) {
-    Row(
+    val isExpandedState = remember { mutableStateOf(false) }
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .background(color = MaterialTheme.colorScheme.primaryContainer),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        IconButton(
-            onClick = navigateUp,
-            enabled = !isRoot.value
+            .wrapContentSize(),
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ){
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .background(color = MaterialTheme.colorScheme.primaryContainer)
+                .zIndex(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Navigates to the Parent Group",
+            IconButton(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(defaultIconButtonPadding),
+                onClick = navigateUp,
+                enabled = !isRoot.value
+            ) {
+                Icon(
+                    modifier = Modifier.size(24.dp),
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Navigates to the Parent Group",
+                )
+            }
+            Text(
+                modifier = Modifier.weight(1f),
+                text = fullpathState.value.drop(1),
+                style = MaterialTheme.typography.headlineMedium
             )
+
+            IconButton(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(defaultIconButtonPadding),
+                onClick = {isExpandedState.value = true}
+            ){
+                Column {
+                    Icon(
+                        modifier = Modifier.size(24.dp),
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Show more options",
+                    )
+                    MoreOptionsDropDownMenu(
+                        isExpandedState = isExpandedState,
+                        navigateToHelpScreen = navigateToHelpScreen,
+                        startSelectionMode = { selectionMode.targetState = true }
+                    )
+                }
+
+            }
         }
-        Text(
-            text = fullpathState.value.drop(1),
-            style = MaterialTheme.typography.headlineMedium
-        )
-        IconButton(
-            onClick = navigateToHelpScreen
-        ){
-            Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = "Open Settings Window",
+        AnimatedVisibility(
+            modifier = Modifier.zIndex(0f),
+            visibleState = selectionMode,
+            enter = slideInVertically(initialOffsetY = { height -> -height }),
+            exit = slideOutVertically(targetOffsetY = { height -> -height })
+        ) {
+            SelectionOptions(
+                delete = deleteSelection,
+                copy = copySelection,
+                paste = pasteSelection,
+                exitSelectionMode = { selectionMode.targetState = false }
             )
         }
     }
+
+
+}
+@Composable
+private fun SelectionOptions(
+    delete: () -> Unit,
+    copy: () -> Unit,
+    paste: () -> Unit,
+    exitSelectionMode: () -> Unit
+){
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .background(MaterialTheme.colorScheme.inversePrimary)
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically
+    ){
+        Button(
+            contentPadding = PaddingValues(0.dp),
+            onClick = copy
+        ) {
+            Text(
+                text = "Copy",
+                color = Color.Black,
+                fontSize = MaterialTheme.typography.labelSmall.fontSize
+            )
+        }
+        Spacer(Modifier.width(defaultIconButtonPadding * 4))
+        Button(
+            contentPadding = PaddingValues(0.dp),
+            onClick = paste
+        ) {
+            Text(
+                text = "Paste",
+                color = Color.Black,
+                fontSize = MaterialTheme.typography.labelSmall.fontSize
+            )
+        }
+        IconButton(
+            modifier = Modifier
+                .wrapContentSize()
+                .padding(defaultIconButtonPadding),
+            onClick = delete
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Deletes Selection"
+            )
+        }
+        IconButton(
+            modifier = Modifier
+                .wrapContentSize()
+                .padding(defaultIconButtonPadding),
+            onClick = exitSelectionMode
+        ) {
+            Icon(
+                modifier = Modifier.size(defaultIconSize),
+                imageVector = Icons.Default.Close,
+                contentDescription = "Closes Selection"
+            )
+        }
+    }
+}
+
+@Composable
+private fun MoreOptionsDropDownMenu(
+    isExpandedState: MutableState<Boolean>,
+    navigateToHelpScreen: () -> Unit,
+    startSelectionMode: () -> Unit
+){
+    if (isExpandedState.value) {
+        DropdownMenu(
+            expanded = isExpandedState.value,
+            onDismissRequest = { isExpandedState.value = false },
+            shape = MaterialTheme.shapes.medium,
+            offset = DpOffset(x = 0.dp, y = 16.dp)
+        ) {
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text = "Open Help Screen",
+                    )
+                },
+                onClick = {
+                    isExpandedState.value = false
+                    navigateToHelpScreen()
+                }
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text = "Toggle Select Items",
+                    )
+                },
+                onClick = {
+                    isExpandedState.value = false
+                    startSelectionMode()
+                }
+
+            )
+        }
+    }
+
 }
 
 @Composable
@@ -282,7 +463,6 @@ private fun GroupScreenView_Preview() {
                     id = 1+2,
                     name = "testA",
                     parentId = 1L,
-                    //path = "//testfullpath/testA",
                     text = "1+2",
                     parseResult = ParseResult(
                         result = 3,
@@ -292,7 +472,6 @@ private fun GroupScreenView_Preview() {
                 1L to Expression(
                     id = 1,
                     name = "testB",
-                    //path = "//testfullpath/testB",
                     parentId = 1L,
                     text = "@(testfullpath/testA)+1",
                     parseResult = ParseResult(
@@ -303,7 +482,6 @@ private fun GroupScreenView_Preview() {
                 2L to Expression(
                     id = 2,
                     name = "testC",
-                    //path = "//testfullpath/testC",
                     parentId = 1L,
                     text = "@(asdn)",
                     parseResult = ShuntingYardParser.evaluate(
@@ -325,7 +503,6 @@ private fun GroupScreenView_Preview() {
                     id = 1,
                     name = "testD",
                     parentId = 0L,
-                    //path = "//testfullpath",
                     templateName = ""
                 )
             )
@@ -365,19 +542,21 @@ private fun GroupScreenView_Preview() {
             getIsCollapsedState = { expressionId -> isCollapsedStateMap[expressionId]?: MutableTransitionState(true) },
             updateName = {},
             updateText = {},
-            delete = {}
+            delete = {},
+            getSelectionState = { mutableStateOf(false) }
         )
     }
     val groupEvents = remember {
         GroupEvents(
             getNameTextFieldState = { expressionGroupId -> childGroupNameTextStateMap[expressionGroupId]!! },
             updateName = {},
-            delete = {}
+            delete = {},
+            getSelectionState = { mutableStateOf(false) }
         )
     }
     DiceCompanionTheme {
         GroupScreenView(
-            fullpathState = remember{ mutableStateOf("//testfullpath") },
+            fullpathState = remember{ mutableStateOf("//testfullpath/test/tes/tes/test/estsetsetsetsetsssssssssssssssssssssssssssssssssss") },
             id = remember { mutableLongStateOf(0L) },
             isRoot = remember{ mutableStateOf(false) },
             childExpressionMapState = childExpressionMapState,
@@ -386,7 +565,8 @@ private fun GroupScreenView_Preview() {
             addChildGroup = {},
             expressionEvents = expressionEvents,
             groupEvents = groupEvents,
-            groupScreenEvents = GroupScreenEvents()
+            groupScreenEvents = GroupScreenEvents(),
+            selectionMode = remember { MutableTransitionState( true ) },
         )
     }
 

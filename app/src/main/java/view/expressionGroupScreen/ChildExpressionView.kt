@@ -2,7 +2,6 @@ package view.expressionGroupScreen
 
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -17,12 +16,12 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -30,9 +29,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,7 +39,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,8 +58,13 @@ import model.RegexPatterns
 import model.dataObjects.Expression
 import model.dataObjects.ParseResult
 import model.parser.token.LiteralType
-import view.resuseable.DismissibleCard
+import view.resuseable.CheckableContainer
+import view.resuseable.RegexInputTransformationFilter
 import view.ui.theme.DiceCompanionTheme
+import view.ui.theme.defaultIconButtonPadding
+import view.ui.theme.defaultIconSize
+import view.ui.theme.itemTitleHeight
+import view.ui.theme.nameTextFieldStatePadding
 import viewModel.EvaluationState
 
 
@@ -69,84 +75,67 @@ fun ChildExpressionView(
     nameTextFieldState: TextFieldState,
     expressionTextFieldState: TextFieldState,
     visibleState: MutableTransitionState<Boolean>,
+    selectionMode: MutableTransitionState<Boolean>,
+    selectionState: MutableState<Boolean>,
     updateName: () -> Unit,
     updateExpressionText: () -> Unit,
-    delete: () -> Unit,
-    copy: () -> Unit,
 ) {
     Row(
-        modifier = modifier
-            .wrapContentHeight()
-            .fillMaxWidth()
-            .animateContentSize(),
-        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier,
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.SpaceBetween
     ){
-        Column{
-            if (visibleState.currentState){
-                TemporaryCopyButton (copy = copy)
-
-            }
-            ResultButton(
-                enabled = !expression.parseResult.isStatic,
-                evaluationState = expression.evaluationState,
-                resultText = expression.resultText,
-                updateExpressionText = updateExpressionText
-            )
-        }
-
-        DismissibleCard(
-            modifier = modifier
+        CheckableContainer(
+            modifier = Modifier
+                .weight(1f)
                 .wrapContentHeight()
-                .fillMaxWidth()
-                .animateContentSize(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.secondary,
-            ),
-            elevation = CardDefaults.elevatedCardElevation(),
-            onStartToEnd = delete,
-            enableDismissFromEndToStart = false,
+                .padding(end = 4.dp),
+            checkboxVisibilityState = selectionMode,
+            state = selectionState
         ) {
-            ChildExpressionView_TitleBar(
-                expression = expression,
-                nameTextFieldState = nameTextFieldState,
-                visibleState = visibleState,
-                updateName = updateName
-            )
-            AnimatedVisibility(
-                visibleState = visibleState,
-                enter = expandVertically(),
-                exit = shrinkVertically()
-
+            Card(
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.secondary,
+                ),
+                elevation = CardDefaults.elevatedCardElevation(),
+                //onStartToEnd = delete,
+                //enableDismissFromEndToStart = false,
+                shape = MaterialTheme.shapes.medium,
             ) {
-                ChildExpressionView_Body(
+                ChildExpressionView_TitleBar(
                     expression = expression,
-                    expressionTextFieldState = expressionTextFieldState,
-                    updateExpressionText = updateExpressionText
+                    nameTextFieldState = nameTextFieldState,
+                    visibleState = visibleState,
+                    updateName = updateName
                 )
+                AnimatedVisibility(
+                    visibleState = visibleState,
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+
+                ) {
+                    ChildExpressionView_Body(
+                        expression = expression,
+                        expressionTextFieldState = expressionTextFieldState,
+                        updateExpressionText = updateExpressionText
+                    )
+                }
             }
         }
+
+        ResultButton(
+            enabled = !expression.parseResult.isStatic,
+            evaluationState = expression.evaluationState,
+            resultText = expression.resultText,
+            updateExpressionText = updateExpressionText
+        )
     }
 
-}
 
-
-@Composable
-private fun TemporaryCopyButton(
-    copy: () -> Unit
-){
-    Button(
-        modifier = Modifier
-            .fillMaxWidth(.15f)
-            .aspectRatio(1f)
-            .padding(4.dp),
-        onClick = copy,
-        shape = MaterialTheme.shapes.large,
-        contentPadding = PaddingValues(2.dp)
-    ){
-        Icon(imageVector = Icons.Default.Add, contentDescription = "Copies Expression")
-    }
 }
 
 @Composable
@@ -161,12 +150,10 @@ private fun ResultButton(
 
     Button(
         modifier = Modifier
-            .fillMaxWidth(.15f)
-            .aspectRatio(1f)
-            .padding(4.dp),
+            .size(itemTitleHeight),
         enabled = enabled,
         onClick = updateExpressionText,
-        shape = MaterialTheme.shapes.large,
+        shape = MaterialTheme.shapes.medium,
         colors = buttonColors,
         contentPadding = PaddingValues(2.dp)
     ) {
@@ -176,10 +163,9 @@ private fun ResultButton(
                 .wrapContentHeight(),
             text = displayText,
             overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.labelLarge
         )
-
-
     }
 }
 
@@ -198,16 +184,17 @@ private fun ChildExpressionView_TitleBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .wrapContentHeight()
+            .height(itemTitleHeight)
             .background(color = MaterialTheme.colorScheme.secondaryContainer)
-            .padding(4.dp)
             .zIndex(1f),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(modifier = Modifier.size(4.dp))
+        Spacer(modifier = Modifier.size(0.dp))
         BasicTextField(
-            modifier = Modifier.wrapContentHeight(),
+            modifier = Modifier
+                .wrapContentHeight()
+                .padding(start = nameTextFieldStatePadding),
             state = nameTextFieldState,
             textStyle = MaterialTheme.typography.headlineMedium.copy(
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -226,11 +213,15 @@ private fun ChildExpressionView_TitleBar(
             },
         )
         IconButton(
+            modifier = Modifier
+                .padding(defaultIconButtonPadding)
+                .wrapContentSize(),
             onClick = {
                 visibleState.targetState = !visibleState.currentState
             }
         ) {
             Icon(
+                modifier = Modifier.size(defaultIconSize),
                 imageVector = Icons.Default.KeyboardArrowDown,
                 contentDescription = "Opens expression editor",
             )
@@ -253,7 +244,8 @@ private fun ChildExpressionView_Body(
             .fillMaxWidth()
 
             .padding(8.dp)
-            .zIndex(-1f)
+            .zIndex(-1f),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (expression.parseResult.errorText.isNotBlank()) {
             Text(
@@ -385,10 +377,10 @@ private fun ChildExpressionView_Preview_Internal(isVisible: Boolean = true){
                         nameTextFieldState = nameTextFieldState,
                         expressionTextFieldState = expressionTextFieldState,
                         visibleState = visibleState,
+                        selectionMode = remember{ MutableTransitionState(true) },
+                        selectionState = remember { mutableStateOf ( false ) },
                         updateName = {},
                         updateExpressionText = {},
-                        delete = {},
-                        copy = {}
                     )
                 }
             }

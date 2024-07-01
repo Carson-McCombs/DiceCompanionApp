@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import model.database.AppRepository
 
@@ -42,9 +43,12 @@ class ClipboardReference(
         if (!groupSelectionStateMap.containsKey(groupId)) groupSelectionStateMap[groupId] = mutableStateOf(false)
         return groupSelectionStateMap[groupId] ?: mutableStateOf(false)
     }
-    fun clear() {
-        expressionSelectionStateMap.values.forEach { state -> state.value = false }
-        groupSelectionStateMap.values.forEach { state -> state.value = false }
+    fun clear(resetState: Boolean = false) {
+        if (resetState){
+            expressionSelectionStateMap.values.forEach { state -> state.value = false }
+            groupSelectionStateMap.values.forEach { state -> state.value = false }
+        }
+
         expressionIds.clear()
         groupIds.clear()
         deepExpressions = emptyList()
@@ -52,9 +56,30 @@ class ClipboardReference(
         deepExpressionIds = emptyList()
         deepGroupIds = emptyList()
     }
-    private fun populateReferences(){
+    fun delete(){
+        clear()
+        setRootReferences()
+        expressionIds.fastForEach { expressionId -> expressionSelectionStateMap.remove(expressionId) }
+        groupIds.fastForEach { groupId -> groupSelectionStateMap.remove(groupId) }
+        runBlocking (defaultDispatcher) {
+            repository.deleteExpressions(expressionIds)
+            repository.deleteGroups(groupIds)
+        }
+
+        clear(true)
+
+    }
+    fun copy(){
+        populateReferences()
+    }
+
+    private fun setRootReferences(){
         expressionIds = expressionSelectionStateMap.filterValues { state -> state.value }.map { entry -> entry.key }.toMutableList()
         groupIds = groupSelectionStateMap.filterValues { state -> state.value }.map { entry -> entry.key }.toMutableList()
+    }
+    private fun populateReferences(){
+        clear()
+        setRootReferences()
         getDeepReferenceIds()
         getDeepReferences()
     }
@@ -70,8 +95,7 @@ class ClipboardReference(
         deepGroups = deepGroupIds.fastMap { groupId -> groupMapState[groupId]!! }
         deepExpressions = deepExpressionIds.fastMap { expressionId -> expressionMapState[expressionId]!! }
     }
-    fun copyTo(parentId: Long) {
-        populateReferences()
+    fun pasteTo(parentId: Long) {
         scope.launch (defaultDispatcher){
             if (deepGroupIds.isEmpty() && deepExpressionIds.isEmpty()) return@launch
             val (parentGroups, parentExpressions) = getDirectDescendants(parentId)

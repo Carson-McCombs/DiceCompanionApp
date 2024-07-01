@@ -1,4 +1,4 @@
-package view.expressionGroupScreen
+package view.resuseable
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text

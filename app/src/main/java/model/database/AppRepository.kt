@@ -123,6 +123,9 @@ class AppRepository(
     suspend fun deleteExpression(expression: Expression) = database.expressionDao().deleteExpression(ExpressionEntity.fromExpression(expression))
 
     @WorkerThread
+    suspend fun deleteExpressions(expressionIds: List<Long>) = database.expressionDao().deleteExpressions(expressionIds)
+
+    @WorkerThread
     fun getGroupWithChildren(id: Long): Flow<GroupWithChildren> = database.groupWithChildrenDao().getExpressionGroupWithChildren(id).map{ expressionGroupWithChildrenEntity -> expressionGroupWithChildrenEntity.toExpressionGroupWithChildren()}
 
     @WorkerThread
@@ -134,4 +137,6 @@ class AppRepository(
     @WorkerThread
     suspend fun deleteGroup(group: Group) = database.groupDao().deleteGroup(GroupEntity.fromExpressionGroup(group))
 
+    @WorkerThread
+    suspend fun deleteGroups(groupIds: List<Long>) = database.groupDao().deleteGroups(groupIds)
 }

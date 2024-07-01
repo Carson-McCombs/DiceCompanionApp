@@ -64,6 +64,9 @@ interface GroupDao {
     @Delete
     suspend fun deleteGroup(groupEntity: GroupEntity)
 
+    @Query("DELETE FROM groupEntity WHERE id IN (:ids)")
+    suspend fun deleteGroups(ids: List<Long>)
+
     @Transaction
     @Query("WITH fullpath_table (id, parentId, fullpath) AS ( " +
             "SELECT id, parentId, name  FROM groupEntity " +
