@@ -139,7 +139,6 @@ private fun GroupScreenView(
                     isExpandedState = isExpandedState,
                     addExpression = addChildExpression,
                     addGroup = addChildGroup,
-                    paste = { groupScreenEvents.pasteSelection(id.value) }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -409,7 +408,6 @@ private fun AddChildDropDownMenu(
     isExpandedState: MutableState<Boolean>,
     addExpression: () -> Unit,
     addGroup: () -> Unit,
-    paste: () -> Unit,
 ) {
     DropdownMenu(
         expanded = isExpandedState.value,
@@ -433,15 +431,6 @@ private fun AddChildDropDownMenu(
                 )
             },
             onClick = addGroup
-        )
-        Spacer(modifier = Modifier.size(8.dp))
-        DropdownMenuItem(
-            text = {
-                Text(
-                    text = "Paste",
-                )
-            },
-            onClick = paste
         )
     }
 }
