@@ -1,6 +1,14 @@
 ## About the Project
 
-Written in Kotlin Compose and Android Studio Koala / Jellyfish. Developed for Android SDK 34 ( minimum SDK 26 ). Uses Kotlin Rooms and SQLite for referencing the local database. Created with Kotlin Flows and concurrency principles to improve performance. Uses the Shunting-Yard Algorithm for evaluating text. Intended to make it easier to play any games with complex dice rolls, such as Tabletop Roleplaying Games ( i.e. Dungeons and Dragons, Pathfinder, etc. ).
+Currently in closed testing before release on Google Playstore. Written in Kotlin Compose and Android Studio Koala / Jellyfish. Developed for Android SDK 34 ( minimum SDK 26 ). Uses Kotlin Rooms and SQLite for referencing the local database. Created with Kotlin Flows and Coroutines to improve performance. Uses the Shunting-Yard Algorithm for evaluating text. Intended to make it easier to play any games with complex dice rolls, such as Tabletop Roleplaying Games ( i.e. Dungeons and Dragons, Pathfinder, etc. ).
+
+### Built With:
+
+*![Kotlin](https://img.shields.io/badge/Kotlin-White?style=flat&logo=kotlin&logoColor=%23FFFFFF&labelColor=White&color=%237F52FF&link=https%3A%2F%2Fkotlinlang.org%2F)
+
+*![SQLite](https://img.shields.io/badge/SQLite-White?style=flat&logo=SQLite&logoColor=White&labelColor=White&color=%23003B57&link=https%3A%2F%2Fwww.sqlite.org%2F)
+
+*![Android Studio](https://img.shields.io/badge/Android%20Studio-White?style=flat&logo=Android%20Studio&logoColor=%23FFFFFF&labelColor=White&color=%233DDC84&link=https%3A%2F%2Fdeveloper.android.com%2Fstudio%3Fgad_source%3D1%26gclid%3DCjwKCAjwm_SzBhAsEiwAXE2CvyjF97QCqUSAjRnHcpGvpea9KoFZH47o7-JQ5qlhE_3XpPBIRs7d-RoCRJsQAvD_BwE%26gclsrc%3Daw.ds)
 
 ### Features: 
 
@@ -53,6 +61,30 @@ This will return a pseudo-random number between "x" (inclusive) and "y" (exclusi
 -**roll ( x, y ):** 
 This will return a roll "y" sided dice ( a random number between 1 (inclusive) and y (inclusive) ) "x" number of times. This will also cause the Expression to be *dynamic* as this function will return a new value each time it is called. 
 For example, roll ( 3, 8 ) can return will return ( random ( 1, 9 ) + random ( 1, 9 ) + random ( 1, 9 )
+
+### Examples:
+
+#### Note: The Copy button is a placeholder and will not be present in the final release
+
+An example where two Expressions are created, named "DamageLocal" and "DamageGlobal". DamageLocal is created with a local reference to the existing "Level" Expression, while DamageGlobal has a global reference to the same Expression.
+
+![Creating_Expressions](https://github.com/Carson-McCombs/DiceCompanionApp/assets/130939367/11160705-cb47-4c83-bf6e-8564d9629116)
+
+An example where an Expression is converted from static to dynamic. So when Expressions that it depends on are updated, instead of automatically generating a new value like a static Expression, its button changes to yellow to show it was generated with an old value.
+
+![Creating_Dynamic_Expression](https://github.com/Carson-McCombs/DiceCompanionApp/assets/130939367/35bba6e6-790b-456e-856a-e909128a51cc)
+
+An example of how an Expression can be copied.
+
+![Creating_Expression_Copy](https://github.com/Carson-McCombs/DiceCompanionApp/assets/130939367/d4363089-008d-4504-b927-20bc6e78bedc)
+
+An example of how a Group can be copied. Notice how all of the Groups and Expressions within it are also copied.
+
+![Creating_Group_Copy](https://github.com/Carson-McCombs/DiceCompanionApp/assets/130939367/e063a746-cc25-4661-bea3-5e45753b10df)
+
+An example of a how renaming an Expression updates all of the other Expressions that depend on it.
+
+![Renaming_Expression](https://github.com/Carson-McCombs/DiceCompanionApp/assets/130939367/6409bfdd-7685-4d3e-a40b-7f12a88f131a)
 
 
 ### Planned Features ( Not Ordered ): 
