@@ -7,7 +7,7 @@ import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -31,8 +31,8 @@ fun AppNavHost(
     clipboardReference: ClipboardReference,
     rootId: Long
 ) {
-    val selectionMode = rememberSaveable(0) { MutableTransitionState(false)}
-    val clipboard = rememberSaveable(0) { clipboardReference }
+    val selectionMode = remember(0) { MutableTransitionState(false)}
+    val clipboard = remember(0) { clipboardReference }
     NavHost(
         navController = navController,
         startDestination = "expressionGroup?id={id}"
@@ -83,7 +83,7 @@ fun AppNavHost(
                     setSelectionMode = { mode ->
                         selectionMode.targetState = mode
                         if (!mode) {
-                            clipboard.clear()
+                            clipboard.clear(true)
                         }
                     },
                     copySelection = {

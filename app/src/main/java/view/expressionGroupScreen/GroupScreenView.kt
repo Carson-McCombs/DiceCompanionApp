@@ -119,7 +119,8 @@ private fun GroupScreenView(
                 selectionMode = selectionMode,
                 deleteSelection = groupScreenEvents.deleteSelection,
                 copySelection = groupScreenEvents.copySelection,
-                pasteSelection = { groupScreenEvents.pasteSelection(id.value) }
+                pasteSelection = { groupScreenEvents.pasteSelection(id.value) },
+                exitSelectionMode = { groupScreenEvents.setSelectionMode(false) }
             )
 
         },
@@ -220,6 +221,7 @@ private fun ExpressionGroupScreenTopBar(
     copySelection: () -> Unit,
     pasteSelection: () -> Unit,
     deleteSelection: () -> Unit,
+    exitSelectionMode: () -> Unit
 ) {
     val isExpandedState = remember { mutableStateOf(false) }
     Column(
@@ -287,7 +289,7 @@ private fun ExpressionGroupScreenTopBar(
                 delete = deleteSelection,
                 copy = copySelection,
                 paste = pasteSelection,
-                exitSelectionMode = { selectionMode.targetState = false }
+                exitSelectionMode = exitSelectionMode
             )
         }
     }
