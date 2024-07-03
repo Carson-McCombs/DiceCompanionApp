@@ -193,6 +193,7 @@ private fun ChildExpressionView_TitleBar(
         Spacer(modifier = Modifier.size(0.dp))
         BasicTextField(
             modifier = Modifier
+                .weight(1f)
                 .wrapContentHeight()
                 .padding(start = nameTextFieldStatePadding),
             state = nameTextFieldState,
@@ -328,7 +329,7 @@ private fun ChildExpressionView_Preview_Internal(isVisible: Boolean = true){
             val expression = Expression(
                 id = -1,
                 parentId = 0L,
-                name = "Text_Expression",
+                name = "Text_Expression_aduisafhiahfaf",
             )
             val expressions = listOf(
                 expression.copy(

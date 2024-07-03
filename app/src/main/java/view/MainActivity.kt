@@ -28,7 +28,6 @@ class MainActivity : ComponentActivity() {
         AppDatabase.getInstance(context = applicationContext)
     }
     private val repository: AppRepository by lazy {
-        //AppRepository.create(scope = CoroutineScope(Dispatchers.IO), database = database)
         AppRepository(scope = CoroutineScope(Dispatchers.IO), database = database)
     }
 

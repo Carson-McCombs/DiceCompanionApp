@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
@@ -257,7 +258,19 @@ private fun ExpressionGroupScreenTopBar(
                 text = fullpathState.value.drop(1),
                 style = MaterialTheme.typography.headlineMedium
             )
+            IconButton(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(defaultIconButtonPadding),
+                onClick = navigateToHelpScreen
+            ){
+                Icon(
+                    modifier = Modifier.size(24.dp),
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = "Open Help Screen",
+                )
 
+            }
             IconButton(
                 modifier = Modifier
                     .wrapContentSize()
@@ -272,7 +285,6 @@ private fun ExpressionGroupScreenTopBar(
                     )
                     MoreOptionsDropDownMenu(
                         isExpandedState = isExpandedState,
-                        navigateToHelpScreen = navigateToHelpScreen,
                         startSelectionMode = { selectionMode.targetState = true }
                     )
                 }
@@ -366,7 +378,6 @@ private fun SelectionOptions(
 @Composable
 private fun MoreOptionsDropDownMenu(
     isExpandedState: MutableState<Boolean>,
-    navigateToHelpScreen: () -> Unit,
     startSelectionMode: () -> Unit
 ){
     if (isExpandedState.value) {
@@ -376,18 +387,7 @@ private fun MoreOptionsDropDownMenu(
             shape = MaterialTheme.shapes.medium,
             offset = DpOffset(x = 0.dp, y = 16.dp)
         ) {
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        text = "Open Help Screen",
-                    )
-                },
-                onClick = {
-                    isExpandedState.value = false
-                    navigateToHelpScreen()
-                }
-            )
-            Spacer(modifier = Modifier.size(8.dp))
+
             DropdownMenuItem(
                 text = {
                     Text(
@@ -398,6 +398,17 @@ private fun MoreOptionsDropDownMenu(
                     isExpandedState.value = false
                     startSelectionMode()
                 }
+
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text = "Settings ( Coming Soon )",
+                    )
+                },
+                onClick = { },
+                enabled = false
 
             )
         }
