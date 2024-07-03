@@ -7,27 +7,27 @@ plugins {
 android {
     namespace = "com.carsonmccombs.dicecompanion"
     compileSdk = 34
-
     defaultConfig {
         applicationId = "com.carsonmccombs.dicecompanion"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
+        versionCode = 4
         versionName = "1.3a"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
     }
-
+    ndkVersion = "27.0.11902837 rc2"
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            ndk.debugSymbolLevel = "FULL"
         }
     }
     compileOptions {
@@ -48,6 +48,7 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
 }
 
 dependencies {
