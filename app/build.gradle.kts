@@ -11,8 +11,8 @@ android {
         applicationId = "com.carsonmccombs.dicecompanion"
         minSdk = 26
         targetSdk = 34
-        versionCode = 4
-        versionName = "1.3a"
+        versionCode = 5
+        versionName = "1.31a"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
